@@ -1,0 +1,12 @@
+# Pycharm and VSC settings, virtual env
+.idea/
+.vscode/
+.venv
+
+# Tryouts and experiments
+prove/
+*/prove/
+
+# Logs
+/omid_openalex/preprocess/*.log
+/logs
