@@ -18,14 +18,13 @@ def create_omid_openalex_mapping(inp_dir:str, db_path:str, out_dir: str) -> None
 
         for root, dirs, files in os.walk(inp_dir):
             for file_name in tqdm(files):
-                with open(join(root, file_name), 'r', encoding='utf-8') as inp_file, open(join(out_dir, file_name), 'w', encoding='utf-8') as out_file:
+                with open(join(root, file_name), 'r', encoding='utf-8') as inp_file, open(join(out_dir, file_name), 'w', encoding='utf-8', newline='') as out_file:
                     reader = DictReader(inp_file)
                     writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id', 'type'])
                     writer.writeheader()
                     for row in reader:
                         oa_ids = set()
                         for id in row['ids'].split():
-                            print(id)
                             curr_id_type = id.split(':')[0]
                             if curr_id_type == 'doi':
                                 curr_lookup_table = 'WorksDoi'
@@ -41,13 +40,20 @@ def create_omid_openalex_mapping(inp_dir:str, db_path:str, out_dir: str) -> None
                             q_start_time = time.time()
                             query = "SELECT openalex_id FROM {} WHERE supported_id=?".format(curr_lookup_table)
                             cursor.execute(query, (id,))
-                            print('Query time: {}'.format(time.time() - q_start_time))
                             for res in cursor.fetchall():
                                 oa_ids.add(res[0])
                         if oa_ids:
                             out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids), 'type': row['type']}
                             writer.writerow(out_row)
 
-
+indexes_created = True
 if __name__ == '__main__':
+    conn = sql.connect('oa_ids_tables.db')
+    cursor = conn.cursor()
+    start_time_idx_doi = time.time()
+    if not indexes_created:
+        cursor.execute("CREATE INDEX idx_doi ON WorksDoi(doi)")
+        cursor.execute("CREATE INDEX idx_pmid ON WorksPmid(pmid)")
+        cursor.execute("CREATE INDEX idx_pmcid ON WorksPmcid(pmcid)")
     create_omid_openalex_mapping('D:/reduced_meta_tables', 'oa_ids_tables.db', 'D:/omid_openalex_mapping')
+    conn.close()

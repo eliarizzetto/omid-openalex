@@ -12,3 +12,4 @@ prove/
 /logs
 /*/.ipynb_checkpoints/
 /omid_openalex/preprocess/oa_ids_tables.db
+/omid_openalex/preprocess/prove.py
