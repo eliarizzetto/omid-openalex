@@ -122,7 +122,7 @@ def create_oa_work_reduced_table(inp_dir: str, out_dir: str) -> None:
                             writer.writerow(r)
             logging.info(f'Processing {compressed_jsonl_name} took {time.time() - file_start_time} seconds')
     logging.info(
-        f'Processing input folder {inp_dir} for OpenAlex table creation took {time.time() - process_start_time} seconds')
+        f'Processing input folder {inp_dir} for OpenAlex table creation took {(time.time() - process_start_time)/60} minutes')
 
 
 if __name__ == '__main__':
