@@ -3,7 +3,7 @@ from os import listdir, makedirs
 import csv
 from io import TextIOWrapper
 from zipfile import ZipFile
-from typing import Generator, List, Dict
+from typing import Generator, Literal, List, Dict, Callable
 from tqdm import tqdm
 import logging
 import time
@@ -33,6 +33,34 @@ def reduce_oa_work_row(inp_entity: dict) -> Generator[dict, None, None]:
             output_row = {'supported_id': item, 'openalex_id': openalex_id}
             yield output_row
 
+def reduce_oa_source_row(inp_entity:dict) -> Generator[dict, None, None]:
+    output_row = dict()
+    ids = set()
+    openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
+    for k, v in inp_entity['ids'].items():
+        if k == 'issn': # ISSNs are stored in a list, not in a string like other ID types!
+            ids.update(['issn:' + i for i in v]) # ISSNs are NOT recorded as URIs, so there is no prefix to remove
+        elif k == 'wikidata':
+            if v.startswith('http://www.wikidata.org/entity/'):
+                ids.add('wikidata:' + v.removeprefix('http://www.wikidata.org/entity/'))
+            elif v.startswith('https://www.wikidata.org/entity/'):
+                ids.add('wikidata:' + v.removeprefix('https://www.wikidata.org/entity/'))
+
+
+    issn = inp_entity['ids'].get('issn')
+    issn_l = inp_entity['ids'].get('issn_l')
+
+    # if there are no ISSNs for this entity, but there's an ISSN-L,
+    # add the ISSN-L as ISSN (i.e. with the 'issn:' prefix).
+    # This is done because OC Meta does not manage ISSN-Ls.
+    # todo: isn't this a bit dangerous? remember to double check! Or consider extending Meta to manage ISSN-Ls too...
+    if not issn and issn_l:
+        ids.add('issn:' + issn_l)
+    if ids:
+        for item in ids:
+            output_row = {'supported_id': item, 'openalex_id': openalex_id}
+            yield output_row
+
 
 def reduce_meta_row(row: dict) -> dict:
     output_row = dict()
@@ -45,7 +73,7 @@ def reduce_meta_row(row: dict) -> dict:
         if id.startswith('meta:'):  # todo: change 'meta' to 'omid'
             output_row['omid'] = id
         elif id.startswith('doi:') or id.startswith('pmid:') or id.startswith('pmcid:') or id.startswith(
-                'issn:') or id.startswith('isbn:'):
+                'issn:') or id.startswith('isbn:') or id.startswith('wikidata:'):
             output_row['ids'].append(id)
     # todo: add support for other IDs (e.g., arxiv, isbn, issn, etc.)?? First see how the Oc MEta dump is
     #  structured: you can consider creating one single table for OC Meta as a first step, and then separate
@@ -94,7 +122,18 @@ def create_meta_reduced_table(inp_dir: str, out_dir: str) -> None:
                 f'Processing input folder {inp_dir} for reduced OC Meta table creation took {time.time() - process_start_time} seconds')
 
 
-def create_oa_work_reduced_table(inp_dir: str, out_dir: str) -> None:
+def create_oa_reduced_table(inp_dir: str, out_dir: str, entity_type: Literal['work', 'source']) -> None:
+
+    # Literal['work', 'source', 'author', 'publisher', 'institution', 'funder']
+
+    if entity_type.lower().strip() == 'work':
+        process_line = reduce_oa_work_row
+    elif entity_type.lower().strip() == 'source':
+        process_line = reduce_oa_source_row
+    # create and add functions for processing lines with other types of OA entities
+    else:
+        raise ValueError("ValueError: the entity type '{}' is not supported.".format(entity_type))
+
     logging.info(f'Processing input folder {inp_dir} for OpenAlex table creation')
     process_start_time = time.time()
     inp_subdirs = [name for name in listdir(inp_dir) if isdir(join(inp_dir, name))]
@@ -115,7 +154,7 @@ def create_oa_work_reduced_table(inp_dir: str, out_dir: str) -> None:
                 writer.writeheader()
                 for line in inp_jsonl:
                     line = json.loads(line)
-                    out_rows = reduce_oa_work_row(
+                    out_rows = process_line(
                         line)  # returns a generator of dicts, each corresponding to a row in the output csv
                     if out_rows:
                         for r in out_rows:
@@ -126,7 +165,7 @@ def create_oa_work_reduced_table(inp_dir: str, out_dir: str) -> None:
 
 
 if __name__ == '__main__':
-    # create_meta_reduced_table(META_INPUT_FOLDER_PATH, META_OUTPUT_FOLDER_PATH)
+    # create_meta_reduced_table(META_INPUT_FOLDER_PATH, META_OUTPUT_FOLDER_PATH, reduce_oa_work_row)
     logging.basicConfig(filename=f'create_mapping_tables{(str(datetime.date(datetime.now())))}.log', level=logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(message)s')
-    # create_oa_work_reduced_table(OA_WORK_INPUT_FOLDER_PATH, OA_WORK_OUTPUT_FOLDER_PATH)
+    # create_oa_reduced_table(OA_WORK_INPUT_FOLDER_PATH, OA_WORK_OUTPUT_FOLDER_PATH, reduce_oa_work_row)

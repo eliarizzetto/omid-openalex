@@ -5,7 +5,7 @@ from os.path import join
 import os
 import time
 
-def create_omid_openalex_mapping(inp_dir:str, db_path:str, out_dir: str) -> None:
+def map_omid_openalex_works(inp_dir:str, db_path:str, out_dir: str) -> None:
     """
     Creates a mapping table between OMIDs and OpenAlex IDs.
     :param inp_dir: path to the folder containing the reduced OC Meta tables
@@ -60,6 +60,6 @@ if __name__ == '__main__':
             cursor.execute(create_idx_query)
             print("Index created.")
     start_time = time.time()
-    create_omid_openalex_mapping('D:/reduced_meta_tables', 'oa_ids_tables.db', 'D:/omid_openalex_mapping')
+    map_omid_openalex_works('D:/reduced_meta_tables', 'oa_ids_tables.db', 'D:/omid_openalex_mapping')
     print("Creating OMID-OpenAlexID map took: {} minutes".format((time.time() - start_time)/60))
     conn.close()
