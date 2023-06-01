@@ -10,7 +10,6 @@ packages = [{include = "omid_openalex"}]
 python = "^3.9"
 pandas = "^2.0.1"
 tqdm = "^4.65.0"
-dask = {extras = ["complete"], version = "^2023.5.0"}
 
 
 [tool.poetry.group.dev.dependencies]

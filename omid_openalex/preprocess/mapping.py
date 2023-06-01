@@ -31,6 +31,10 @@ def map_omid_openalex_works(inp_dir:str, db_path:str, out_dir: str) -> None:
                                 curr_lookup_table = 'WorksPmid'
                             elif curr_id_type == 'pmcid':
                                 curr_lookup_table = 'WorksPmcid'
+                            elif curr_id_type == 'issn':
+                                curr_lookup_table = 'SourcesIssn'
+                            elif curr_id_type == 'wikidata':
+                                curr_lookup_table = 'SourcesWikidata'
                             else:
                                 # this function only supports the mapping of Works IDs (doi, pmid, pmcid) to OMIDs. There
                                 # are no other ID types in the reduced OpenAlex Works tables, so we can safely skip
@@ -56,10 +60,11 @@ if __name__ == '__main__':
         res = cursor.fetchall()
         if not res:
             print("No indexes found on table {}. Creating indexes for table {} on 'supported_id' field...".format(tbl, tbl))
-            create_idx_query = "CREATE INDEX idx_{}_works ON {}(supported_id);".format(tbl.split('Works')[1].lower(), tbl)
+            create_idx_query = "CREATE INDEX idx_{} ON {}(supported_id);".format(tbl.lower(), tbl)
             cursor.execute(create_idx_query)
             print("Index created.")
     start_time = time.time()
     map_omid_openalex_works('D:/reduced_meta_tables', 'oa_ids_tables.db', 'D:/omid_openalex_mapping')
     print("Creating OMID-OpenAlexID map took: {} minutes".format((time.time() - start_time)/60))
+    cursor.close()
     conn.close()
