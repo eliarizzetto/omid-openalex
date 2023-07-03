@@ -4,4 +4,4 @@ This repository contains the code to generate the mapping between OpenAlex IDs a
 This alignment permits to add the corresponding OpenAlex ID for every resource already registered in OpenCitations Meta.
 
 
-Diario [31 maggio 23](https://sleepy-geese-5d2.notion.site/2023-05-31-3e598c6fde794ebabf867740eab1f3ff)
+Diario: https://sleepy-geese-5d2.notion.site/Index-6544baacb4e44b14ac4562926070ae6f?pvs=4
