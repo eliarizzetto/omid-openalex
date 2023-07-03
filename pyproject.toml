@@ -8,13 +8,20 @@ packages = [{include = "omid_openalex"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pandas = "^2.0.1"
+pandas = "^2.0.2"
 tqdm = "^4.65.0"
 
 
 [tool.poetry.group.dev.dependencies]
+ipykernel = "^6.23.2"
+ipykernel = "^6.23.2"
 jupyter = "^1.0.0"
-ipykernel = "^6.23.1"
+plotly = "^5.15.0"
+dash = "^2.10.2"
+jupyter-dash = "^0.4.2"
+chart-studio = "^1.1.0"
+jsonlines = "^3.1.0"
+dask = {extras = ["complete"], version = "^2023.6.0"}
 
 [build-system]
 requires = ["poetry-core"]

@@ -6,10 +6,16 @@
 # Tryouts and experiments
 prove/
 */prove/
+trials
 
 # Logs
 /omid_openalex/preprocess/*.log
-/logs
-/*/.ipynb_checkpoints/
 /omid_openalex/preprocess/oa_ids_tables.db
 /omid_openalex/preprocess/prove.py
+/prove/experiment.py
+graphs/
+iframe_figures/
+/*/*/.ipynb_checkpoints/
+/omid_openalex/logs/
+*/.ipynb_checkpoints/
+/analytics/multi_mapped_omids.csv

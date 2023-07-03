@@ -11,11 +11,6 @@ from datetime import datetime
 import gzip
 import json
 
-META_INPUT_FOLDER_PATH = join('D:/oc_meta_dump')
-META_OUTPUT_FOLDER_PATH = join('D:/reduced_meta_tables')
-OA_WORK_INPUT_FOLDER_PATH = join('D:/openalex_dump/data/works')
-OA_WORK_OUTPUT_FOLDER_PATH = join('D:/oa_work_tables')
-
 
 def reduce_oa_work_row(inp_entity: dict) -> Generator[dict, None, None]:
     output_row = dict()
@@ -34,7 +29,6 @@ def reduce_oa_work_row(inp_entity: dict) -> Generator[dict, None, None]:
             yield output_row
 
 def reduce_oa_source_row(inp_entity:dict) -> Generator[dict, None, None]:
-    output_row = dict()
     ids = set()
     openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
     for k, v in inp_entity['ids'].items():
@@ -72,15 +66,14 @@ def reduce_meta_row(row: dict) -> dict:
     for id in row['id'].split():
         if id.startswith('meta:'):  # todo: change 'meta' to 'omid'
             output_row['omid'] = id
-        elif id.startswith('doi:') or id.startswith('pmid:') or id.startswith('pmcid:') or id.startswith(
-                'issn:') or id.startswith('isbn:') or id.startswith('wikidata:'):
+        else:  # i.e., if prefix is one of: 'doi:','pmid:','pmcid:','issn:','isbn:','wikidata:'
             output_row['ids'].append(id)
-    # todo: add support for other IDs (e.g., arxiv, isbn, issn, etc.)?? First see how the Oc MEta dump is
-    #  structured: you can consider creating one single table for OC Meta as a first step, and then separate
-    #  single resources and venues in the processing phase (according to the 'type'), since single resources
-    #  and venues are placed in the same dump in OC Meta, but in different directory in OpenAlex.
+    #  todo: add support for other IDs (e.g., arxiv, isbn, issn, etc.)?? First see how the Oc MEta dump is
+    #   structured: you can consider creating one single table for OC Meta as a first step, and then separate
+    #   single resources and venues in the processing phase (according to the 'type'), since single resources
+    #   and venues are placed in the same dump in OC Meta, but in different directories in OpenAlex.
 
-    if output_row['ids']:  # if the resource has at least one external ID
+    if output_row['ids']:  # if the resource has at least one external ID that is supported by OpenAlex
         output_row['ids'] = ' '.join(output_row['ids'])
         return output_row
 
@@ -165,7 +158,13 @@ def create_oa_reduced_table(inp_dir: str, out_dir: str, entity_type: Literal['wo
 
 
 if __name__ == '__main__':
+
+    META_INPUT_FOLDER_PATH = join('D:/oc_meta_dump')
+    META_OUTPUT_FOLDER_PATH = join('D:/reduced_meta_tables')
+    OA_WORK_INPUT_FOLDER_PATH = join('D:/openalex_dump/data/works')
+    OA_WORK_OUTPUT_FOLDER_PATH = join('D:/oa_work_tables')
+
     # create_meta_reduced_table(META_INPUT_FOLDER_PATH, META_OUTPUT_FOLDER_PATH, reduce_oa_work_row)
-    logging.basicConfig(filename=f'create_mapping_tables{(str(datetime.date(datetime.now())))}.log', level=logging.INFO,
+    logging.basicConfig(filename=f'../logs/create_mapping_tables{(str(datetime.date(datetime.now())))}.log', level=logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(message)s')
     # create_oa_reduced_table(OA_WORK_INPUT_FOLDER_PATH, OA_WORK_OUTPUT_FOLDER_PATH, reduce_oa_work_row)
