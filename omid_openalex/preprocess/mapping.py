@@ -44,7 +44,7 @@ def create_id_db_table(inp_dir:str, db_path:str, id_type:Literal['doi', 'pmid', 
 
     print(f"Creating the database table for {id_type.upper()}s took {(time.time()-start_time)/60} minutes")
 
-def map_omid_openalex_works(inp_dir:str, db_path:str, out_dir: str) -> None:
+def map_omid_openalex_ids(inp_dir:str, db_path:str, out_dir: str) -> None:
     """
     Creates a mapping table between OMIDs and OpenAlex IDs.
     :param inp_dir: path to the folder containing the reduced OC Meta tables
@@ -61,24 +61,34 @@ def map_omid_openalex_works(inp_dir:str, db_path:str, out_dir: str) -> None:
                     writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id', 'type'])
                     writer.writeheader()
                     for row in reader:
+                        entity_type = row['type']
                         oa_ids = set()
                         for id in row['ids'].split():
                             curr_id_type = id.split(':')[0]
-                            if curr_id_type == 'doi':
-                                curr_lookup_table = 'WorksDoi'
-                            elif curr_id_type == 'pmid':
-                                curr_lookup_table = 'WorksPmid'
-                            elif curr_id_type == 'pmcid':
-                                curr_lookup_table = 'WorksPmcid'
-                            elif curr_id_type == 'issn':
-                                curr_lookup_table = 'SourcesIssn'
-                            elif curr_id_type == 'wikidata':
-                                curr_lookup_table = 'SourcesWikidata'
+
+                            # if it's a serial publication, consider only ISSN, in order to avoid multi-mapping due to DOI
+                            if entity_type in ['journal', 'series', 'book series']:
+                                if curr_id_type == 'issn':
+                                    curr_lookup_table = 'SourcesIssn'
+                                else:
+                                    continue
+                            # if the entity is not a serial publication, consider all the ID types
                             else:
-                                # this function only supports the mapping of Works IDs (doi, pmid, pmcid) to OMIDs. There
-                                # are no other ID types in the reduced OpenAlex Works tables, so we can safely skip
-                                # processing them, although they have been left in the reduced OC Meta tables.
-                                continue
+                                if curr_id_type == 'doi':
+                                    curr_lookup_table = 'WorksDoi'
+                                elif curr_id_type == 'pmid':
+                                    curr_lookup_table = 'WorksPmid'
+                                elif curr_id_type == 'pmcid':
+                                    curr_lookup_table = 'WorksPmcid'
+                                elif curr_id_type == 'issn':
+                                    curr_lookup_table = 'SourcesIssn'
+                                elif curr_id_type == 'wikidata':
+                                    curr_lookup_table = 'SourcesWikidata'
+                                else:
+                                    # this function only supports the mapping of Works IDs (doi, pmid, pmcid) to OMIDs. There
+                                    # are no other ID types in the reduced OpenAlex Works tables, so we can safely skip
+                                    # processing them, although they have been left in the reduced OC Meta tables.
+                                    continue
                             query = "SELECT openalex_id FROM {} WHERE supported_id=?".format(curr_lookup_table)
                             cursor.execute(query, (id,))
                             for res in cursor.fetchall():
@@ -111,7 +121,7 @@ if __name__ == '__main__':
             print("Index created.")
     # Create the mapping table between OMIDs and OpenAlex IDs
     start_time = time.time()
-    map_omid_openalex_works('D:/reduced_meta_tables', 'oa_ids_tables.db', 'D:/map_sources_omid_openalex')
+    map_omid_openalex_ids('D:/reduced_meta_tables', 'oa_ids_tables.db', 'D:/map_sources_omid_openalex')
     print("Creating OMID-OpenAlexID map took: {} hours".format((time.time() - start_time)/3600))
     cursor.close()
     conn.close()

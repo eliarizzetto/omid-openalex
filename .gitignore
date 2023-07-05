@@ -15,7 +15,8 @@ trials
 /prove/experiment.py
 graphs/
 iframe_figures/
-/*/*/.ipynb_checkpoints/
+**/*.ipynb_checkpoints/
 /omid_openalex/logs/
 */.ipynb_checkpoints/
 /analytics/multi_mapped_omids.csv
+/omid_openalex/preprocess/.ipynb_checkpoints/
