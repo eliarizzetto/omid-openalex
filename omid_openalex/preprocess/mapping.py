@@ -85,9 +85,7 @@ def map_omid_openalex_ids(inp_dir:str, db_path:str, out_dir: str) -> None:
                                 elif curr_id_type == 'wikidata':
                                     curr_lookup_table = 'SourcesWikidata'
                                 else:
-                                    # this function only supports the mapping of Works IDs (doi, pmid, pmcid) to OMIDs. There
-                                    # are no other ID types in the reduced OpenAlex Works tables, so we can safely skip
-                                    # processing them, although they have been left in the reduced OC Meta tables.
+                                    # only PIDs for bibliographic resources supported by both OC Meta and OpenAlex are considered
                                     continue
                             query = "SELECT openalex_id FROM {} WHERE supported_id=?".format(curr_lookup_table)
                             cursor.execute(query, (id,))

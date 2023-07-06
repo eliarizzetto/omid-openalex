@@ -3,13 +3,14 @@ from os import listdir, makedirs
 import csv
 from io import TextIOWrapper
 from zipfile import ZipFile
-from typing import Generator, Literal, List, Dict, Callable
+from typing import Generator, Literal, Union, List, Dict, Callable
 from tqdm import tqdm
 import logging
 import time
 from datetime import datetime
 import gzip
 import json
+import re
 
 
 def reduce_oa_work_row(inp_entity: dict) -> Generator[dict, None, None]:
@@ -28,18 +29,18 @@ def reduce_oa_work_row(inp_entity: dict) -> Generator[dict, None, None]:
             output_row = {'supported_id': item, 'openalex_id': openalex_id}
             yield output_row
 
-def reduce_oa_source_row(inp_entity:dict) -> Generator[dict, None, None]:
+
+def reduce_oa_source_row(inp_entity: dict) -> Generator[dict, None, None]:
     ids = set()
     openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
     for k, v in inp_entity['ids'].items():
-        if k == 'issn': # ISSNs are stored in a list, not in a string like other ID types!
-            ids.update(['issn:' + i for i in v]) # ISSNs are NOT recorded as URIs, so there is no prefix to remove
+        if k == 'issn':  # ISSNs are stored in a list, not in a string like other ID types!
+            ids.update(['issn:' + i for i in v])  # ISSNs are NOT recorded as URIs, so there is no prefix to remove
         elif k == 'wikidata':
             if v.startswith('http://www.wikidata.org/entity/'):
                 ids.add('wikidata:' + v.removeprefix('http://www.wikidata.org/entity/'))
             elif v.startswith('https://www.wikidata.org/entity/'):
                 ids.add('wikidata:' + v.removeprefix('https://www.wikidata.org/entity/'))
-
 
     issn = inp_entity['ids'].get('issn')
     issn_l = inp_entity['ids'].get('issn_l')
@@ -56,7 +57,7 @@ def reduce_oa_source_row(inp_entity:dict) -> Generator[dict, None, None]:
             yield output_row
 
 
-def reduce_meta_row(row: dict) -> dict:
+def get_entity_ids_and_type(row: dict) -> Union[dict, None]:
     output_row = dict()
     output_row['omid'] = ''
     output_row['ids'] = []
@@ -77,6 +78,54 @@ def reduce_meta_row(row: dict) -> dict:
         output_row['ids'] = ' '.join(output_row['ids'])
         return output_row
 
+
+def get_venue_ids(row: dict) -> Union[dict, None]:
+    """
+    Extracts the IDs in the value of the 'venue' field from a row of the OC Meta dump.
+        :param row: dict representing a row of the OC Meta dump
+        :return: dict with the OMID and the PIDs of the entity in the venue field
+    """
+    output_row = dict()
+    output_row['omid'] = ''
+    output_row['ids'] = []
+    # entity_type = row['type']
+    # todo: maybe the value of type (corresponding to the type of the row entity, not the venue)
+    #  is useful for determining which IDs to consider?? E.g. if type is 'journal article', then the venue should be
+    #   a journal, so we should consider only journal IDs (ISSN) and not book IDs (DOIs).
+
+    # get resource's omid and other IDs
+    v = row['venue']
+    venue_ids = v[v.index('[') + 1:v.index(']')].strip().split() # TODO: NOTE: THIS ASSUMES THAT THE VENUE FIELD IS ALWAYS IN THE SAME FORMAT, IE ALWAYS SQUARE BRACKETS AND ALWAYS ONE SINGLE VENUE!
+    for id in venue_ids:
+        if id.startswith('meta:'):  # todo: change 'meta' to 'omid'
+            output_row['omid'] = id
+        else:  # i.e., if prefix is one of: 'doi:','pmid:','pmcid:','issn:','isbn:','wikidata:'
+            output_row['ids'].append(id)
+
+    if output_row['ids']:  # if the entity in venue has at least one external ID that is supported by OpenAlex
+        output_row['ids'] = ' '.join(output_row['ids'])
+        return output_row
+
+
+def get_ra_ids(row: dict, field: Literal['author', 'publisher', 'editor']) -> Generator[dict, None, None]:
+    output_row = dict()
+
+    for ra_entity in row[field].split('; '):
+        output_row['omid'] = ''
+        output_row['ids'] = []
+        try:
+            start = ra_entity.index('[') + 1
+            end = ra_entity.index(']')
+            for ra_id in ra_entity[start:end].strip().split():
+                if ra_id.startswith('meta:'):  # todo: change 'meta' to 'omid'
+                    output_row['omid'] = ra_id
+                else:
+                    output_row['ids'].append(ra_id)
+            if output_row['ids']:
+                output_row['ids'] = ' '.join(output_row['ids'])
+                yield output_row
+        except ValueError:
+            continue
 
 def create_meta_reduced_table(inp_dir: str, out_dir: str) -> None:
     csv.field_size_limit(131072 * 4)  # quadruple the default limit for csv field size
@@ -103,7 +152,7 @@ def create_meta_reduced_table(inp_dir: str, out_dir: str) -> None:
                         reader = list(csv.DictReader(TextIOWrapper(csv_file, encoding='utf-8'),
                                                      dialect='unix'))  # todo: check if this is the best way to do it: maybe leave it as a generator?
                         for row in reader:
-                            reduced_row = reduce_meta_row(row)
+                            reduced_row = get_entity_ids_and_type(row)
                             if reduced_row:
                                 writer.writerow(reduced_row)
                         logging.info(f'Processing {csv_name} took {time.time() - file_start_time} seconds')
@@ -116,7 +165,6 @@ def create_meta_reduced_table(inp_dir: str, out_dir: str) -> None:
 
 
 def create_oa_reduced_table(inp_dir: str, out_dir: str, entity_type: Literal['work', 'source']) -> None:
-
     # Literal['work', 'source', 'author', 'publisher', 'institution', 'funder']
 
     if entity_type.lower().strip() == 'work':
@@ -154,17 +202,17 @@ def create_oa_reduced_table(inp_dir: str, out_dir: str, entity_type: Literal['wo
                             writer.writerow(r)
             logging.info(f'Processing {compressed_jsonl_name} took {time.time() - file_start_time} seconds')
     logging.info(
-        f'Processing input folder {inp_dir} for OpenAlex table creation took {(time.time() - process_start_time)/60} minutes')
+        f'Processing input folder {inp_dir} for OpenAlex table creation took {(time.time() - process_start_time) / 60} minutes')
 
 
 if __name__ == '__main__':
-
     META_INPUT_FOLDER_PATH = join('D:/oc_meta_dump')
     META_OUTPUT_FOLDER_PATH = join('D:/reduced_meta_tables')
     OA_WORK_INPUT_FOLDER_PATH = join('D:/openalex_dump/data/works')
     OA_WORK_OUTPUT_FOLDER_PATH = join('D:/oa_work_tables')
 
     # create_meta_reduced_table(META_INPUT_FOLDER_PATH, META_OUTPUT_FOLDER_PATH, reduce_oa_work_row)
-    logging.basicConfig(filename=f'../logs/create_mapping_tables{(str(datetime.date(datetime.now())))}.log', level=logging.INFO,
+    logging.basicConfig(filename=f'../logs/create_mapping_tables{(str(datetime.date(datetime.now())))}.log',
+                        level=logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(message)s')
     # create_oa_reduced_table(OA_WORK_INPUT_FOLDER_PATH, OA_WORK_OUTPUT_FOLDER_PATH, reduce_oa_work_row)
