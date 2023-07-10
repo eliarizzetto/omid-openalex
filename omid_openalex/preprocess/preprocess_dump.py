@@ -127,7 +127,20 @@ def get_ra_ids(row: dict, field: Literal['author', 'publisher', 'editor']) -> Ge
         except ValueError:
             continue
 
-def create_meta_reduced_table(inp_dir: str, out_dir: str) -> None:
+def preprocess_meta_tables(inp_dir: str, out_dir: str) -> None:
+    """
+    Preprocesses the OC Meta tables to create reduced tables with essential metadata. For each entity represented in a
+    row in the original table, the reduced output table contains the OMID ('omid' field) and the PIDs ('ids' field) of
+    the entity, as well as the type of resource ('type' field).
+    For the entity in the 'venue' field of a row in the original table, the reduced output table only contains the OMID
+    and the PIDs of the entity ('omid' and 'ids' fields).
+        :param inp_dir: the directory where the OC Meta tables are stored
+        :param out_dir: the directory where the reduced tables will be written, named with the same name as the original
+         but prefixed with 'primary_ents_' if the table concerns the entity whose IDs are stored in the 'id' field of
+         the original table, and prefixed with 'venues_' if the table concerns the entity whose IDs are stored in the
+         'venue' field of the original table.
+        :return: None (writes the reduced tables to disk)
+    """
     csv.field_size_limit(131072 * 4)  # quadruple the default limit for csv field size
     makedirs(out_dir, exist_ok=True)
     logging.info(f'Processing input folder {inp_dir} for reduced OC Meta table creation')
@@ -142,19 +155,26 @@ def create_meta_reduced_table(inp_dir: str, out_dir: str) -> None:
                 file_start_time = time.time()
                 files_pbar.set_description(f'Processing {csv_name}')
                 files_pbar.update()
-                out_filename = 'reduced_' + basename(csv_name)
-                out_path = join(abspath(out_dir), out_filename)
-                with archive.open(csv_name, 'r') as csv_file, open(out_path, 'w', newline='',
-                                                                   encoding='utf-8') as out_file:
-                    writer = csv.DictWriter(out_file, dialect='unix', fieldnames=['omid', 'ids', 'type'])
-                    writer.writeheader()
+                primary_ents_out_filename = 'primary_ents_' + basename(csv_name)
+                venues_out_filename = 'venues_' + basename(csv_name)
+                primary_ents_out_path = join(abspath(out_dir), primary_ents_out_filename)
+                venues_out_path = join(abspath(out_dir), venues_out_filename)
+                with archive.open(csv_name, 'r') as csv_file, open(primary_ents_out_path, 'w', newline='', encoding='utf-8') as primary_ents_out_file, open(venues_out_path, 'w', newline='', encoding='utf-8') as venues_out_file:
+                    primary_ents_writer = csv.DictWriter(primary_ents_out_file, dialect='unix', fieldnames=['omid', 'ids', 'type'])
+                    venues_writer = csv.DictWriter(venues_out_file, dialect='unix', fieldnames=['omid', 'ids'])
+                    primary_ents_writer.writeheader()
+                    venues_writer.writeheader()
                     try:
                         reader = list(csv.DictReader(TextIOWrapper(csv_file, encoding='utf-8'),
                                                      dialect='unix'))  # todo: check if this is the best way to do it: maybe leave it as a generator?
                         for row in reader:
-                            reduced_row = get_entity_ids_and_type(row)
-                            if reduced_row:
-                                writer.writerow(reduced_row)
+                            primary_entity_out_row = get_entity_ids_and_type(row)
+                            venue_out_row = get_venue_ids(row)
+                            if primary_entity_out_row:
+                                primary_ents_writer.writerow(primary_entity_out_row)
+                            if venue_out_row:
+                                venues_writer.writerow(venue_out_row)
+
                         logging.info(f'Processing {csv_name} took {time.time() - file_start_time} seconds')
                     except csv.Error as e:
                         logging.error(f'Error while processing {csv_name}: {e}')
@@ -211,7 +231,7 @@ if __name__ == '__main__':
     OA_WORK_INPUT_FOLDER_PATH = join('D:/openalex_dump/data/works')
     OA_WORK_OUTPUT_FOLDER_PATH = join('D:/oa_work_tables')
 
-    # create_meta_reduced_table(META_INPUT_FOLDER_PATH, META_OUTPUT_FOLDER_PATH, reduce_oa_work_row)
+    # preprocess_meta_tables(META_INPUT_FOLDER_PATH, META_OUTPUT_FOLDER_PATH, reduce_oa_work_row)
     logging.basicConfig(filename=f'../logs/create_mapping_tables{(str(datetime.date(datetime.now())))}.log',
                         level=logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(message)s')
