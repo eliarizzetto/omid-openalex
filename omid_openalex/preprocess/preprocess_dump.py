@@ -10,8 +10,6 @@ import time
 from datetime import datetime
 import gzip
 import json
-import re
-
 
 def reduce_oa_work_row(inp_entity: dict) -> Generator[dict, None, None]:
     output_row = dict()
@@ -113,6 +111,8 @@ def get_ra_ids(row: dict, field: Literal['author', 'publisher', 'editor']) -> Ge
     for ra_entity in row[field].split('; '):
         output_row['omid'] = ''
         output_row['ids'] = []
+        output_row['ra_role'] = field
+        ra_entity = ra_entity.strip()
         try:
             start = ra_entity.index('[') + 1
             end = ra_entity.index(']')
@@ -134,11 +134,18 @@ def preprocess_meta_tables(inp_dir: str, out_dir: str) -> None:
     the entity, as well as the type of resource ('type' field).
     For the entity in the 'venue' field of a row in the original table, the reduced output table only contains the OMID
     and the PIDs of the entity ('omid' and 'ids' fields).
+    For each entity in the 'author', 'publisher', and 'editor' fields of a row in the original table, the reduced output
+    table contains the OMID and the PIDs of the entity ('omid' and 'ids' fields), as well as the role of the entity
+    ('ra_role' field, with the value being one of 'author', 'publisher', or 'editor').
         :param inp_dir: the directory where the OC Meta tables are stored
         :param out_dir: the directory where the reduced tables will be written, named with the same name as the original
-         but prefixed with 'primary_ents_' if the table concerns the entity whose IDs are stored in the 'id' field of
-         the original table, and prefixed with 'venues_' if the table concerns the entity whose IDs are stored in the
-         'venue' field of the original table.
+         but prefixed with:
+            * 'primary_ents_' if the table concerns the entity whose IDs are stored in the 'id' field of
+             the original table
+            * prefixed with 'venues_' if the table concerns the entity whose IDs are stored in the
+             'venue' field of the original table
+            * prefixed with 'resp_ags_' if the table concerns the entities whose IDs are stored in the 'author', 'publisher',
+                or 'editor' fields of the original table
         :return: None (writes the reduced tables to disk)
     """
     csv.field_size_limit(131072 * 4)  # quadruple the default limit for csv field size
@@ -157,24 +164,38 @@ def preprocess_meta_tables(inp_dir: str, out_dir: str) -> None:
                 files_pbar.update()
                 primary_ents_out_filename = 'primary_ents_' + basename(csv_name)
                 venues_out_filename = 'venues_' + basename(csv_name)
+                resp_ags_out_filename = 'resp_ags_' + basename(csv_name)
                 primary_ents_out_path = join(abspath(out_dir), primary_ents_out_filename)
                 venues_out_path = join(abspath(out_dir), venues_out_filename)
-                with archive.open(csv_name, 'r') as csv_file, open(primary_ents_out_path, 'w', newline='', encoding='utf-8') as primary_ents_out_file, open(venues_out_path, 'w', newline='', encoding='utf-8') as venues_out_file:
+                resp_ags_out_path = join(abspath(out_dir), resp_ags_out_filename)
+                with archive.open(csv_name, 'r') as csv_file, open(primary_ents_out_path, 'w', newline='', encoding='utf-8') as primary_ents_out_file, open(venues_out_path, 'w', newline='', encoding='utf-8') as venues_out_file, open(resp_ags_out_path, 'w', newline='', encoding='utf-8') as resp_ags_out_file:
                     primary_ents_writer = csv.DictWriter(primary_ents_out_file, dialect='unix', fieldnames=['omid', 'ids', 'type'])
                     venues_writer = csv.DictWriter(venues_out_file, dialect='unix', fieldnames=['omid', 'ids'])
+                    resp_ags_writer = csv.DictWriter(resp_ags_out_file, dialect='unix', fieldnames=['omid', 'ids', 'role'])
                     primary_ents_writer.writeheader()
                     venues_writer.writeheader()
+                    resp_ags_writer.writeheader()
                     try:
                         reader = list(csv.DictReader(TextIOWrapper(csv_file, encoding='utf-8'),
                                                      dialect='unix'))  # todo: check if this is the best way to do it: maybe leave it as a generator?
                         for row in reader:
-                            primary_entity_out_row = get_entity_ids_and_type(row)
-                            venue_out_row = get_venue_ids(row)
-                            if primary_entity_out_row:
-                                primary_ents_writer.writerow(primary_entity_out_row)
-                            if venue_out_row:
-                                venues_writer.writerow(venue_out_row)
+                            primary_entity_out_row: dict = get_entity_ids_and_type(row)
+                            venue_out_row: dict = get_venue_ids(row)
+                            # create a row for the resource uniquely identified by the OMID in the 'id' field
 
+                        if primary_entity_out_row:
+                            primary_ents_writer.writerow(primary_entity_out_row)
+                        # create a row for the resource identified by the OMID in the 'venue' field
+                        if venue_out_row:
+                            venues_writer.writerow(venue_out_row)
+                        # create a row for each of the entities in the responsible agent fields ('author', 'publisher', 'editor' of the input row
+                        for field in ['author', 'publisher', 'editor']:
+                            for ra_out_row in get_ra_ids(row, field):
+                                # todo: consider splitting authors, publishers, editors into separate tables
+                                #  (and modifying the get_ra_ids function accordingly,
+                                #  i.e. removing a then unnecessary 'ra_role' field in the output dictionary)
+
+                                resp_ags_writer.writerow(ra_out_row)
                         logging.info(f'Processing {csv_name} took {time.time() - file_start_time} seconds')
                     except csv.Error as e:
                         logging.error(f'Error while processing {csv_name}: {e}')
