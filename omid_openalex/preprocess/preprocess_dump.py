@@ -125,6 +125,7 @@ def get_ra_ids(row: dict, field: Literal['author', 'publisher', 'editor']) -> Ge
                 output_row['ids'] = ' '.join(output_row['ids'])
                 yield output_row
         except ValueError:
+            print(f'Error: {field} field of row {row} is not in the expected format. The entity corresponding to {ra_entity} is not processed.')
             continue
 
 def preprocess_meta_tables(inp_dir: str, out_dir: str) -> None:

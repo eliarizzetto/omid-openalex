@@ -67,6 +67,11 @@ def map_omid_openalex_ids(inp_dir:str, db_path:str, out_dir: str) -> None:
                             curr_id_type = id.split(':')[0]
 
                             # if it's a serial publication, consider only ISSN, in order to avoid multi-mapping due to DOI
+                            # todo: considera di cambiare la logica: non in base al type,
+                            #  ma in base alla presenza o meno di un ISSN (ovvero, se c'è/ci sono ISSN(s)
+                            #  si considerano solo quelli). Questo renderebbe il codice più generale, e con piccole
+                            #  modifiche si potrebbe usare anche per le altre tabelle (e.g. per le tabelle delle risorse
+                            #  estratte dal campo 'venue', che non hanno un type).
                             if entity_type in ['journal', 'series', 'book series']:
                                 if curr_id_type == 'issn':
                                     curr_lookup_table = 'SourcesIssn'
@@ -119,7 +124,7 @@ if __name__ == '__main__':
             print("Index created.")
     # Create the mapping table between OMIDs and OpenAlex IDs
     start_time = time.time()
-    map_omid_openalex_ids('D:/reduced_meta_tables', 'oa_ids_tables.db', 'D:/map_sources_omid_openalex')
+    # map_omid_openalex_ids('E:/reduced_meta_tables', 'oa_ids_tables.db', 'E:/test_no_multi_map')
     print("Creating OMID-OpenAlexID map took: {} hours".format((time.time() - start_time)/3600))
     cursor.close()
     conn.close()
