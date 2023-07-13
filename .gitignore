@@ -12,6 +12,9 @@ trials
 
 # Logs
 /omid_openalex/preprocess/*.log
+*.log
+
+# other
 /omid_openalex/preprocess/oa_ids_tables.db
 /omid_openalex/preprocess/prove.py
 /prove/experiment.py
