@@ -111,7 +111,11 @@ def get_venue_ids(row: dict) -> Union[dict, None]:
 def get_ra_ids(row: dict, field: Literal['author', 'publisher', 'editor']) -> Generator[dict, None, None]:
     output_row = dict()
     if row[field]:
-        for ra_entity in row[field].split('; '):
+        if field == 'publisher':  # no separator in the publisher field -> only one entity!
+            entities = [row[field]]
+        else:  # author and editor fields can contain multiple entities, separated by '; '
+            entities = row[field].split('; ')
+        for ra_entity in entities:
             output_row['omid'] = ''
             output_row['ids'] = []
             output_row['ra_role'] = field

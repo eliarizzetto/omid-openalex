@@ -29,11 +29,11 @@ if __name__ == '__main__':
     # create_oa_reduced_table(inp_dir=sources_inp_dir, out_dir=sources_out_dir, entity_type='source')
     # print('Sources table created in', (time.time() - start)/3600, 'hours')
     # logging.info(f'Sources table created in {(time.time() - start)/3600} hours')
-    print('Creating Meta Tables...')
-    start = time.time()
-    preprocess_meta_tables(inp_dir=NEW_META_DUMP, out_dir=meta_out_dir)
-    print('Meta tables created in', (time.time() - start)/3600, 'hours')
-    logging.info(f'Meta tables created in {(time.time() - start)/3600} hours')
+    # print('Creating Meta Tables...')
+    # start = time.time()
+    # preprocess_meta_tables(inp_dir=NEW_META_DUMP, out_dir=meta_out_dir)
+    # print('Meta tables created in', (time.time() - start)/3600, 'hours')
+    # logging.info(f'Meta tables created in {(time.time() - start)/3600} hours')
 
     ## CREATE DATABASE TABLES
     # print('Create OA ID tables...')
