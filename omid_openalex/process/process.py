@@ -4,7 +4,7 @@ from os.path import join
 import time
 import logging
 
-NEW_META_DUMP = 'E:/meta_csv_dump_2023-06-28.zip'
+NEW_META_DUMP = 'E:/meta_latest_dump/'
 NEW_OA_DUMP = 'E:/openalex_dump_latest/data'
 NEW_OUT_DIR = 'E:/new_tables'
 NEW_DB_PATH = 'new_db.db'
@@ -35,30 +35,30 @@ if __name__ == '__main__':
     print('Meta tables created in', (time.time() - start)/3600, 'hours')
     logging.info(f'Meta tables created in {(time.time() - start)/3600} hours')
 
-    # CREATE DATABASE TABLES
-    print('Create OA ID tables...')
-    print('Creating DB table for DOIs')
-    start = time.time()
-    create_id_db_table(works_out_dir, NEW_DB_PATH, 'doi', 'work')
-    print('Table for DOIs created in', (time.time() - start)/60, 'minutes')
-    logging.info(f'Table for DOIs created in {(time.time() - start)/60} minutes')
-    start = time.time()
-    print('Creating DB table for PMIDs')
-    create_id_db_table(works_out_dir, NEW_DB_PATH, 'pmid', 'work')
-    print('Table for PMIDs created in', (time.time() - start)/60, 'minutes')
-    logging.info(f'Table for PMIDs created in {(time.time() - start)/60} minutes')
-    start = time.time()
-    print('Creating DB table for PMCIDs')
-    create_id_db_table(works_out_dir, NEW_DB_PATH, 'pmcid', 'work')
-    print('Table for PMCIDs created in', (time.time() - start)/60, 'minutes')
-    logging.info(f'Table for PMCIDs created in {(time.time() - start)/60} minutes')
-    start = time.time()
-    print('Creating DB table for Wikidata IDs')
-    create_id_db_table(sources_out_dir, NEW_DB_PATH, 'wikidata', 'source')
-    print('Table for Wikidata IDs created in', (time.time() - start)/60, 'minutes')
-    logging.info(f'Table for Wikidata IDs created in {(time.time() - start)/60} minutes')
-    start = time.time()
-    print('Creating DB table for ISSNs')
-    create_id_db_table(sources_out_dir, NEW_DB_PATH, 'issn', 'source')
-    print('Table for ISSNs created in', (time.time() - start)/60, 'minutes')
-    logging.info(f'Table for ISSNs created in {(time.time() - start)/60} minutes')
+    ## CREATE DATABASE TABLES
+    # print('Create OA ID tables...')
+    # print('Creating DB table for DOIs')
+    # start = time.time()
+    # create_id_db_table(works_out_dir, NEW_DB_PATH, 'doi', 'work')
+    # print('Table for DOIs created in', (time.time() - start)/60, 'minutes')
+    # logging.info(f'Table for DOIs created in {(time.time() - start)/60} minutes')
+    # start = time.time()
+    # print('Creating DB table for PMIDs')
+    # create_id_db_table(works_out_dir, NEW_DB_PATH, 'pmid', 'work')
+    # print('Table for PMIDs created in', (time.time() - start)/60, 'minutes')
+    # logging.info(f'Table for PMIDs created in {(time.time() - start)/60} minutes')
+    # start = time.time()
+    # print('Creating DB table for PMCIDs')
+    # create_id_db_table(works_out_dir, NEW_DB_PATH, 'pmcid', 'work')
+    # print('Table for PMCIDs created in', (time.time() - start)/60, 'minutes')
+    # logging.info(f'Table for PMCIDs created in {(time.time() - start)/60} minutes')
+    # start = time.time()
+    # print('Creating DB table for Wikidata IDs')
+    # create_id_db_table(sources_out_dir, NEW_DB_PATH, 'wikidata', 'source')
+    # print('Table for Wikidata IDs created in', (time.time() - start)/60, 'minutes')
+    # logging.info(f'Table for Wikidata IDs created in {(time.time() - start)/60} minutes')
+    # start = time.time()
+    # print('Creating DB table for ISSNs')
+    # create_id_db_table(sources_out_dir, NEW_DB_PATH, 'issn', 'source')
+    # print('Table for ISSNs created in', (time.time() - start)/60, 'minutes')
+    # logging.info(f'Table for ISSNs created in {(time.time() - start)/60} minutes')

@@ -1,5 +1,5 @@
 from os.path import join, abspath, splitext, basename, exists, isdir, isfile
-from os import listdir, makedirs
+from os import listdir, makedirs, walk
 import csv
 from io import TextIOWrapper
 from zipfile import ZipFile
@@ -63,7 +63,7 @@ def get_entity_ids_and_type(row: dict) -> Union[dict, None]:
 
     # get resource's omid and other IDs
     for id in row['id'].split():
-        if id.startswith('meta:'):  # todo: change 'meta' to 'omid'
+        if id.startswith('omid:'):  # todo: change 'meta' to 'omid'
             output_row['omid'] = id
         else:  # i.e., if prefix is one of: 'doi:','pmid:','pmcid:','issn:','isbn:','wikidata:'
             output_row['ids'].append(id)
@@ -93,40 +93,44 @@ def get_venue_ids(row: dict) -> Union[dict, None]:
 
     # get resource's omid and other IDs
     v = row['venue']
-    venue_ids = v[v.index('[') + 1:v.index(']')].strip().split() # TODO: NOTE: THIS ASSUMES THAT THE VENUE FIELD IS ALWAYS IN THE SAME FORMAT, IE ALWAYS SQUARE BRACKETS AND ALWAYS ONE SINGLE VENUE!
-    for id in venue_ids:
-        if id.startswith('meta:'):  # todo: change 'meta' to 'omid'
-            output_row['omid'] = id
-        else:  # i.e., if prefix is one of: 'doi:','pmid:','pmcid:','issn:','isbn:','wikidata:'
-            output_row['ids'].append(id)
+    if v:
+        venue_ids = v[v.index('[') + 1:v.index(']')].strip().split() # TODO: NOTE: THIS ASSUMES THAT THE VENUE FIELD IS ALWAYS IN THE SAME FORMAT, IE ALWAYS SQUARE BRACKETS AND ALWAYS ONE SINGLE VENUE!
+        for id in venue_ids:
+            if id.startswith('omid:'):  # todo: change 'meta' to 'omid'
+                output_row['omid'] = id
+            else:  # i.e., if prefix is one of: 'doi:','pmid:','pmcid:','issn:','isbn:','wikidata:'
+                output_row['ids'].append(id)
 
-    if output_row['ids']:  # if the entity in venue has at least one external ID that is supported by OpenAlex
-        output_row['ids'] = ' '.join(output_row['ids'])
-        return output_row
+        if output_row['ids']:  # if the entity in venue has at least one external ID that is supported by OpenAlex
+            output_row['ids'] = ' '.join(output_row['ids'])
+            return output_row
+    else:
+        return None
 
 
 def get_ra_ids(row: dict, field: Literal['author', 'publisher', 'editor']) -> Generator[dict, None, None]:
     output_row = dict()
-
-    for ra_entity in row[field].split('; '):
-        output_row['omid'] = ''
-        output_row['ids'] = []
-        output_row['ra_role'] = field
-        ra_entity = ra_entity.strip()
-        try:
-            start = ra_entity.index('[') + 1
-            end = ra_entity.index(']')
-            for ra_id in ra_entity[start:end].strip().split():
-                if ra_id.startswith('meta:'):  # todo: change 'meta' to 'omid'
-                    output_row['omid'] = ra_id
-                else:
-                    output_row['ids'].append(ra_id)
-            if output_row['ids']:
-                output_row['ids'] = ' '.join(output_row['ids'])
-                yield output_row
-        except ValueError:
-            print(f'Error: {field} field of row {row} is not in the expected format. The entity corresponding to {ra_entity} is not processed.')
-            continue
+    if row[field]:
+        for ra_entity in row[field].split('; '):
+            output_row['omid'] = ''
+            output_row['ids'] = []
+            output_row['ra_role'] = field
+            ra_entity = ra_entity.strip()
+            try:
+                start = ra_entity.index('[') + 1
+                end = ra_entity.index(']')
+                for ra_id in ra_entity[start:end].strip().split():
+                    if ra_id.startswith('omid:'):  # todo: change 'meta' to 'omid'
+                        output_row['omid'] = ra_id
+                    else:
+                        output_row['ids'].append(ra_id)
+                if output_row['ids']:
+                    output_row['ids'] = ' '.join(output_row['ids'])
+                    yield output_row
+            except ValueError:
+                # print(f'Error: {field} field of row {row} is not in the expected format. The entity corresponding to {ra_entity} is not processed.')
+                logging.error(f'Error: {field} field of row {row} is not in the expected format. The entity corresponding to {ra_entity} is not processed.')
+                continue
 
 def preprocess_meta_tables(inp_dir: str, out_dir: str) -> None:
     """
@@ -153,57 +157,61 @@ def preprocess_meta_tables(inp_dir: str, out_dir: str) -> None:
     makedirs(out_dir, exist_ok=True)
     logging.info(f'Processing input folder {inp_dir} for reduced OC Meta table creation')
     process_start_time = time.time()
-    for snapshot_folder_name in listdir(abspath(inp_dir)):
-        archive_path = join(abspath(inp_dir), snapshot_folder_name)
-        with ZipFile(archive_path) as archive:
-            files_pbar = tqdm(total=len(archive.namelist()), desc='Processing files in archive', unit='file',
-                              disable=False)
-            for csv_name in archive.namelist():
-                logging.info(f'Processing {csv_name}')
-                file_start_time = time.time()
-                files_pbar.set_description(f'Processing {csv_name}')
-                files_pbar.update()
-                primary_ents_out_filename = 'primary_ents_' + basename(csv_name)
-                venues_out_filename = 'venues_' + basename(csv_name)
-                resp_ags_out_filename = 'resp_ags_' + basename(csv_name)
-                primary_ents_out_path = join(abspath(out_dir), primary_ents_out_filename)
-                venues_out_path = join(abspath(out_dir), venues_out_filename)
-                resp_ags_out_path = join(abspath(out_dir), resp_ags_out_filename)
-                with archive.open(csv_name, 'r') as csv_file, open(primary_ents_out_path, 'w', newline='', encoding='utf-8') as primary_ents_out_file, open(venues_out_path, 'w', newline='', encoding='utf-8') as venues_out_file, open(resp_ags_out_path, 'w', newline='', encoding='utf-8') as resp_ags_out_file:
-                    primary_ents_writer = csv.DictWriter(primary_ents_out_file, dialect='unix', fieldnames=['omid', 'ids', 'type'])
-                    venues_writer = csv.DictWriter(venues_out_file, dialect='unix', fieldnames=['omid', 'ids'])
-                    resp_ags_writer = csv.DictWriter(resp_ags_out_file, dialect='unix', fieldnames=['omid', 'ids', 'role'])
-                    primary_ents_writer.writeheader()
-                    venues_writer.writeheader()
-                    resp_ags_writer.writeheader()
-                    try:
-                        reader = list(csv.DictReader(TextIOWrapper(csv_file, encoding='utf-8'),
-                                                     dialect='unix'))  # todo: check if this is the best way to do it: maybe leave it as a generator?
-                        for row in reader:
-                            primary_entity_out_row: dict = get_entity_ids_and_type(row)
-                            venue_out_row: dict = get_venue_ids(row)
-                            # create a row for the resource uniquely identified by the OMID in the 'id' field
+    # for snapshot_folder_name in listdir(abspath(inp_dir)):
+    for root, dirs, files in walk(inp_dir):
+        for file in files:
+            if file.endswith('.zip'):
+                archive_path = join(root, file)
+        # archive_path = join(abspath(inp_dir), snapshot_folder_name)
+                with ZipFile(archive_path) as archive:
+                    files_pbar = tqdm(total=len(archive.namelist()), desc='Processing files in archive', unit='file',
+                                      disable=False)
+                    for csv_name in archive.namelist():
+                        logging.info(f'Processing {csv_name}')
+                        file_start_time = time.time()
+                        files_pbar.set_description(f'Processing {csv_name}')
+                        files_pbar.update()
+                        primary_ents_out_filename = 'primary_ents_' + basename(csv_name)
+                        venues_out_filename = 'venues_' + basename(csv_name)
+                        resp_ags_out_filename = 'resp_ags_' + basename(csv_name)
+                        primary_ents_out_path = join(abspath(out_dir), primary_ents_out_filename)
+                        venues_out_path = join(abspath(out_dir), venues_out_filename)
+                        resp_ags_out_path = join(abspath(out_dir), resp_ags_out_filename)
+                        with archive.open(csv_name, 'r') as csv_file, open(primary_ents_out_path, 'w', newline='', encoding='utf-8') as primary_ents_out_file, open(venues_out_path, 'w', newline='', encoding='utf-8') as venues_out_file, open(resp_ags_out_path, 'w', newline='', encoding='utf-8') as resp_ags_out_file:
+                            primary_ents_writer = csv.DictWriter(primary_ents_out_file, dialect='unix', fieldnames=['omid', 'ids', 'type'])
+                            venues_writer = csv.DictWriter(venues_out_file, dialect='unix', fieldnames=['omid', 'ids'])
+                            resp_ags_writer = csv.DictWriter(resp_ags_out_file, dialect='unix', fieldnames=['omid', 'ids', 'ra_role'])
+                            primary_ents_writer.writeheader()
+                            venues_writer.writeheader()
+                            resp_ags_writer.writeheader()
+                            try:
+                                reader = list(csv.DictReader(TextIOWrapper(csv_file, encoding='utf-8'),
+                                                             dialect='unix'))  # todo: check if this is the best way to do it: maybe leave it as a generator?
+                                for row in reader:
+                                    primary_entity_out_row: dict = get_entity_ids_and_type(row)
+                                    venue_out_row: dict = get_venue_ids(row)
+                                    # create a row for the resource uniquely identified by the OMID in the 'id' field
 
-                        if primary_entity_out_row:
-                            primary_ents_writer.writerow(primary_entity_out_row)
-                        # create a row for the resource identified by the OMID in the 'venue' field
-                        if venue_out_row:
-                            venues_writer.writerow(venue_out_row)
-                        # create a row for each of the entities in the responsible agent fields ('author', 'publisher', 'editor' of the input row
-                        for field in ['author', 'publisher', 'editor']:
-                            for ra_out_row in get_ra_ids(row, field):
-                                # todo: consider splitting authors, publishers, editors into separate tables
-                                #  (and modifying the get_ra_ids function accordingly,
-                                #  i.e. removing a then unnecessary 'ra_role' field in the output dictionary)
+                                    if primary_entity_out_row:
+                                        primary_ents_writer.writerow(primary_entity_out_row)
+                                    # create a row for the resource identified by the OMID in the 'venue' field
+                                    if venue_out_row:
+                                        venues_writer.writerow(venue_out_row)
+                                # create a row for each of the entities in the responsible agent fields ('author', 'publisher', 'editor' of the input row
+                                    for field in ['author', 'publisher', 'editor']:
+                                        for ra_out_row in get_ra_ids(row, field):
+                                            # todo: consider splitting authors, publishers, editors into separate tables
+                                            #  (and modifying the get_ra_ids function accordingly,
+                                            #  i.e. removing a then unnecessary 'ra_role' field in the output dictionary)
 
-                                resp_ags_writer.writerow(ra_out_row)
-                        logging.info(f'Processing {csv_name} took {time.time() - file_start_time} seconds')
-                    except csv.Error as e:
-                        logging.error(f'Error while processing {csv_name}: {e}')
+                                            resp_ags_writer.writerow(ra_out_row)
+                                logging.info(f'Processing {csv_name} took {time.time() - file_start_time} seconds')
+                            except csv.Error as e:
+                                logging.error(f'Error while processing {csv_name}: {e}')
 
-            files_pbar.close()
-            logging.info(
-                f'Processing input folder {inp_dir} for reduced OC Meta table creation took {time.time() - process_start_time} seconds')
+                    files_pbar.close()
+                    logging.info(
+                        f'Processing input folder {inp_dir} for reduced OC Meta table creation took {time.time() - process_start_time} seconds')
 
 
 def create_oa_reduced_table(inp_dir: str, out_dir: str, entity_type: Literal['work', 'source']) -> None:
@@ -247,14 +255,14 @@ def create_oa_reduced_table(inp_dir: str, out_dir: str, entity_type: Literal['wo
         f'Processing input folder {inp_dir} for OpenAlex table creation took {(time.time() - process_start_time) / 60} minutes')
 
 
-if __name__ == '__main__':
-    META_INPUT_FOLDER_PATH = join('D:/oc_meta_dump')
-    META_OUTPUT_FOLDER_PATH = join('D:/reduced_meta_tables')
-    OA_WORK_INPUT_FOLDER_PATH = join('D:/openalex_dump/data/works')
-    OA_WORK_OUTPUT_FOLDER_PATH = join('D:/oa_work_tables')
-
-    # preprocess_meta_tables(META_INPUT_FOLDER_PATH, META_OUTPUT_FOLDER_PATH, reduce_oa_work_row)
-    logging.basicConfig(filename=f'../logs/create_mapping_tables{(str(datetime.date(datetime.now())))}.log',
-                        level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s - %(message)s')
+# if __name__ == '__main__':
+    # META_INPUT_FOLDER_PATH = join('D:/oc_meta_dump')
+    # META_OUTPUT_FOLDER_PATH = join('D:/reduced_meta_tables')
+    # OA_WORK_INPUT_FOLDER_PATH = join('D:/openalex_dump/data/works')
+    # OA_WORK_OUTPUT_FOLDER_PATH = join('D:/oa_work_tables')
+    #
+    # # preprocess_meta_tables(META_INPUT_FOLDER_PATH, META_OUTPUT_FOLDER_PATH, reduce_oa_work_row)
+    # logging.basicConfig(filename=f'../logs/create_mapping_tables{(str(datetime.date(datetime.now())))}.log',
+    #                     level=logging.INFO,
+    #                     format='%(asctime)s - %(levelname)s - %(message)s')
     # create_oa_reduced_table(OA_WORK_INPUT_FOLDER_PATH, OA_WORK_OUTPUT_FOLDER_PATH, reduce_oa_work_row)
