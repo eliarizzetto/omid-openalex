@@ -35,9 +35,9 @@ def reduce_oa_source_row(inp_entity: dict) -> Generator[dict, None, None]:
         if k == 'issn':  # ISSNs are stored in a list, not in a string like other ID types!
             ids.update(['issn:' + i for i in v])  # ISSNs are NOT recorded as URIs, so there is no prefix to remove
         elif k == 'wikidata':
-            if v.startswith('http://www.wikidata.org/entity/'):
+            if v.startswith('http:'):
                 ids.add('wikidata:' + v.removeprefix('http://www.wikidata.org/entity/'))
-            elif v.startswith('https://www.wikidata.org/entity/'):
+            elif v.startswith('https:'):
                 ids.add('wikidata:' + v.removeprefix('https://www.wikidata.org/entity/'))
 
     issn = inp_entity['ids'].get('issn')
@@ -54,6 +54,68 @@ def reduce_oa_source_row(inp_entity: dict) -> Generator[dict, None, None]:
             output_row = {'supported_id': item, 'openalex_id': openalex_id}
             yield output_row
 
+def reduce_oa_author_row(inp_entity: dict) -> Generator[dict, None, None]:
+    output_row = dict()
+    ids = set()
+    openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
+    for k, v in inp_entity['ids'].items():
+        if k == 'orcid':
+            ids.add('orcid:' + v.removeprefix('https://orcid.org/'))
+    if ids:
+        for item in ids:
+            output_row = {'supported_id': item, 'openalex_id': openalex_id}
+            yield output_row
+
+def reduce_oa_institution_row(inp_entity: dict) -> Generator[dict, None, None]:
+    output_row = dict()
+    ids = set()
+    openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
+    for k, v in inp_entity['ids'].items():
+        if k == 'ror':
+            ids.add('ror:' + v.removeprefix('https://ror.org/'))
+        elif k == 'wikidata':
+            if v.startswith('http:'):
+                ids.add('wikidata:' + v.removeprefix('http://www.wikidata.org/entity/'))
+            elif v.startswith('https:'):
+                ids.add('wikidata:' + v.removeprefix('https://www.wikidata.org/entity/'))
+    if ids:
+        for item in ids:
+            output_row = {'supported_id': item, 'openalex_id': openalex_id}
+            yield output_row
+
+def reduce_oa_publisher_row(inp_entity: dict) -> Generator[dict, None, None]:
+    output_row = dict()
+    ids = set()
+    openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
+    for k, v in inp_entity['ids'].items():
+        if k == 'ror':
+            ids.add('ror:' + v.removeprefix('https://ror.org/'))
+        elif k == 'wikidata':
+            if v.startswith('http:'):
+                ids.add('wikidata:' + v.removeprefix('http://www.wikidata.org/entity/'))
+            elif v.startswith('https:'):
+                ids.add('wikidata:' + v.removeprefix('https://www.wikidata.org/entity/'))
+    if ids:
+        for item in ids:
+            output_row = {'supported_id': item, 'openalex_id': openalex_id}
+            yield output_row
+
+def reduce_oa_funder_row(inp_entity: dict) -> Generator[dict, None, None]:
+    output_row = dict()
+    ids = set()
+    openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
+    for k, v in inp_entity['ids'].items():
+        if k == 'ror':
+            ids.add('ror:' + v.removeprefix('https://ror.org/'))
+        elif k == 'wikidata':
+            if v.startswith('http:'):
+                ids.add('wikidata:' + v.removeprefix('http://www.wikidata.org/entity/'))
+            elif v.startswith('https:'):
+                ids.add('wikidata:' + v.removeprefix('https://www.wikidata.org/entity/'))
+    if ids:
+        for item in ids:
+            output_row = {'supported_id': item, 'openalex_id': openalex_id}
+            yield output_row
 
 def get_entity_ids_and_type(row: dict) -> Union[dict, None]:
     output_row = dict()
