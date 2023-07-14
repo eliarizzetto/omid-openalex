@@ -280,13 +280,21 @@ def preprocess_meta_tables(inp_dir: str, out_dir: str) -> None:
                         f'Processing input folder {inp_dir} for reduced OC Meta table creation took {time.time() - process_start_time} seconds')
 
 
-def create_oa_reduced_table(inp_dir: str, out_dir: str, entity_type: Literal['work', 'source']) -> None:
+def create_oa_reduced_table(inp_dir: str, out_dir: str, entity_type: Literal['work', 'source', 'author', 'publisher', 'institution', 'funder']) -> None:
     # Literal['work', 'source', 'author', 'publisher', 'institution', 'funder']
 
     if entity_type.lower().strip() == 'work':
         process_line = reduce_oa_work_row
     elif entity_type.lower().strip() == 'source':
         process_line = reduce_oa_source_row
+    elif entity_type.lower().strip() == 'author':
+        process_line = reduce_oa_author_row
+    elif entity_type.lower().strip() == 'publisher':
+        process_line = reduce_oa_publisher_row
+    elif entity_type.lower().strip() == 'institution':
+        process_line = reduce_oa_institution_row
+    elif entity_type.lower().strip() == 'funder':
+        process_line = reduce_oa_funder_row
     # create and add functions for processing lines with other types of OA entities
     else:
         raise ValueError("ValueError: the entity type '{}' is not supported.".format(entity_type))
