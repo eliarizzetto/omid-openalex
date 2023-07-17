@@ -60,42 +60,51 @@ def map_omid_openalex_ids(inp_dir:str, db_path:str, out_dir: str) -> None:
                     reader = DictReader(inp_file)
                     writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id', 'type'])
                     writer.writeheader()
+
                     for row in reader:
                         entity_type = row['type']
+                        entity_ids: list = row['ids'].split()
                         oa_ids = set()
-                        for id in row['ids'].split():
-                            curr_id_type = id.split(':')[0]
 
-                            # if it's a serial publication, consider only ISSN, in order to avoid multi-mapping due to DOI
-                            # todo: considera di cambiare la logica: non in base al type,
-                            #  ma in base alla presenza o meno di un ISSN (ovvero, se c'è/ci sono ISSN(s)
-                            #  si considerano solo quelli). Questo renderebbe il codice più generale, e con piccole
-                            #  modifiche si potrebbe usare anche per le altre tabelle (e.g. per le tabelle delle risorse
-                            #  estratte dal campo 'venue', che non hanno un type).
-                            if entity_type in ['journal', 'series', 'book series']:
-                                if curr_id_type == 'issn':
-                                    curr_lookup_table = 'SourcesIssn'
+                        # if there is an ISSN for the entity in OC Meta, look only for ISSN in OpenAlex
+                        if any(x.startswith('issn:') for x in entity_ids):
+                            for id in entity_ids:
+                                if id.startswith('issn'):
+                                    query = "SELECT openalex_id FROM SourcesIssn WHERE supported_id=?"
+                                    cursor.execute(query, (id,))
+                                    for res in cursor.fetchall():
+                                        oa_ids.add(res[0])
                                 else:
                                     continue
-                            # if the entity is not a serial publication, consider all the ID types
-                            else:
-                                if curr_id_type == 'doi':
-                                    curr_lookup_table = 'WorksDoi'
-                                elif curr_id_type == 'pmid':
+
+                        # if there is a DOI for the entity in OC Meta and no ISSNs, look only for DOI in OpenAlex
+                        elif any(x.startswith('doi:') for x in entity_ids):
+                            for id in entity_ids:
+                                if id.startswith('doi:'):
+                                    query = "SELECT openalex_id FROM WorksDoi WHERE supported_id=?"
+                                    cursor.execute(query, (id,))
+                                    for res in cursor.fetchall():
+                                        oa_ids.add(res[0])
+                                else:
+                                    continue
+
+                        # if there is no ISSN nor DOI for the entity in OC Meta, look for all the other IDs in OpenAlex
+                        else:
+                            for id in entity_ids:
+                                if id.startswith('pmid:'):
                                     curr_lookup_table = 'WorksPmid'
-                                elif curr_id_type == 'pmcid':
+                                elif id.startswith('pmcid:'):
                                     curr_lookup_table = 'WorksPmcid'
-                                elif curr_id_type == 'issn':
-                                    curr_lookup_table = 'SourcesIssn'
-                                elif curr_id_type == 'wikidata':
+                                elif id.startswith('wikidata:'):
                                     curr_lookup_table = 'SourcesWikidata'
                                 else:
                                     # only PIDs for bibliographic resources supported by both OC Meta and OpenAlex are considered
                                     continue
-                            query = "SELECT openalex_id FROM {} WHERE supported_id=?".format(curr_lookup_table)
-                            cursor.execute(query, (id,))
-                            for res in cursor.fetchall():
-                                oa_ids.add(res[0])
+                                query = "SELECT openalex_id FROM {} WHERE supported_id=?".format(curr_lookup_table)
+                                cursor.execute(query, (id,))
+                                for res in cursor.fetchall():
+                                    oa_ids.add(res[0])
+
                         if oa_ids:
                             out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids), 'type': row['type']}
                             writer.writerow(out_row)
