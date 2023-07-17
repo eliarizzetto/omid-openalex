@@ -220,7 +220,12 @@ def preprocess_meta_tables(inp_dir: str, out_dir: str) -> None:
         :return: None (writes the reduced tables to disk)
     """
     csv.field_size_limit(131072 * 4)  # quadruple the default limit for csv field size
-    makedirs(out_dir, exist_ok=True)
+    primary_ents_out_dir = join(out_dir, 'primary_ents')
+    makedirs(primary_ents_out_dir, exist_ok=True)
+    venues_out_dir = join(out_dir, 'venues')
+    makedirs(venues_out_dir, exist_ok=True)
+    resp_ags_out_dir = join(out_dir, 'resp_ags')
+    makedirs(resp_ags_out_dir, exist_ok=True)
     logging.info(f'Processing input folder {inp_dir} for reduced OC Meta table creation')
     process_start_time = time.time()
     # for snapshot_folder_name in listdir(abspath(inp_dir)):
@@ -237,12 +242,9 @@ def preprocess_meta_tables(inp_dir: str, out_dir: str) -> None:
                         file_start_time = time.time()
                         files_pbar.set_description(f'Processing {csv_name}')
                         files_pbar.update()
-                        primary_ents_out_filename = 'primary_ents_' + basename(csv_name)
-                        venues_out_filename = 'venues_' + basename(csv_name)
-                        resp_ags_out_filename = 'resp_ags_' + basename(csv_name)
-                        primary_ents_out_path = join(abspath(out_dir), primary_ents_out_filename)
-                        venues_out_path = join(abspath(out_dir), venues_out_filename)
-                        resp_ags_out_path = join(abspath(out_dir), resp_ags_out_filename)
+                        primary_ents_out_path = join(primary_ents_out_dir, basename(csv_name))
+                        venues_out_path = join(venues_out_dir, basename(csv_name))
+                        resp_ags_out_path = join(resp_ags_out_dir, basename(csv_name))
                         with archive.open(csv_name, 'r') as csv_file, open(primary_ents_out_path, 'w', newline='', encoding='utf-8') as primary_ents_out_file, open(venues_out_path, 'w', newline='', encoding='utf-8') as venues_out_file, open(resp_ags_out_path, 'w', newline='', encoding='utf-8') as resp_ags_out_file:
                             primary_ents_writer = csv.DictWriter(primary_ents_out_file, dialect='unix', fieldnames=['omid', 'ids', 'type'])
                             venues_writer = csv.DictWriter(venues_out_file, dialect='unix', fieldnames=['omid', 'ids'])

@@ -26,3 +26,4 @@ iframe_figures/
 */.ipynb_checkpoints/
 /analytics/multi_mapped_omids.csv
 /omid_openalex/preprocess/.ipynb_checkpoints/
+/omid_openalex/process/new_mapping_main.py

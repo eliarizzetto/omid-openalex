@@ -97,3 +97,5 @@ if __name__ == '__main__':
     #   separate tables according both to the ID type and the OA entity type (e.g. AuthorsOrcid, InstitutionsRor,
     #       PublishersRos etc.) or to create tables according only to the ID type (i.e., e.g. a table for all ROR IDs,
     #           regardless of the OA entity type, would store the ROR IDs of authors, institutions and publishers)
+
+    ## CREATE INDEXES FOR DATABASE TABLES ON
