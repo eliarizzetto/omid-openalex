@@ -282,8 +282,8 @@ def preprocess_meta_tables(inp_dir: str, out_dir: str) -> None:
                                 except csv.Error as e:
                                     logging.error(f'Error while processing {csv_name}: {e}')
 
-                        logging.info(
-                            f'Processing input folder {inp_dir} for reduced OC Meta table creation took {time.time() - process_start_time} seconds')
+                        # logging.info(
+                        #     f'Processing input folder {inp_dir} for reduced OC Meta table creation took {time.time() - process_start_time} seconds')
 
 
 def create_oa_reduced_table(inp_dir: str, out_dir: str, entity_type: Literal['work', 'source', 'author', 'publisher', 'institution', 'funder']) -> None:

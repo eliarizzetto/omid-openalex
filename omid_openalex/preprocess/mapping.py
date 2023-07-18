@@ -44,11 +44,14 @@ def create_id_db_table(inp_dir:str, db_path:str, id_type:Literal['doi', 'pmid', 
 
     print(f"Creating the database table for {id_type.upper()}s took {(time.time()-start_time)/60} minutes")
 
-def map_omid_openalex_ids(inp_dir:str, db_path:str, out_dir: str) -> None:
+def map_omid_openalex_ids(inp_dir:str, db_path:str, out_dir: str, res_type_field=True) -> None:
     """
     Creates a mapping table between OMIDs and OpenAlex IDs.
     :param inp_dir: path to the folder containing the reduced OC Meta tables
+    :param db_path: path to the database file
     :param out_dir: path to the folder where the mapping table should be saved
+    :param res_type_field: if True, the mapping table will contain the type of the entity (use for IDs from the OC Meta
+        'id' field) otherwise it will not (use for IDs from the OC Meta 'venue' field)
     :return: None
     """
     os.makedirs(out_dir, exist_ok=True)
@@ -58,11 +61,13 @@ def map_omid_openalex_ids(inp_dir:str, db_path:str, out_dir: str) -> None:
             for file_name in tqdm(files):
                 with open(join(root, file_name), 'r', encoding='utf-8') as inp_file, open(join(out_dir, file_name), 'w', encoding='utf-8', newline='') as out_file:
                     reader = DictReader(inp_file)
-                    writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id', 'type'])
+                    if res_type_field:
+                        writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id', 'type'])
+                    else:
+                        writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id'])
                     writer.writeheader()
 
                     for row in reader:
-                        entity_type = row['type']
                         entity_ids: list = row['ids'].split()
                         oa_ids = set()
 
@@ -106,7 +111,10 @@ def map_omid_openalex_ids(inp_dir:str, db_path:str, out_dir: str) -> None:
                                     oa_ids.add(res[0])
 
                         if oa_ids:
-                            out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids), 'type': row['type']}
+                            if res_type_field:
+                                out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids), 'type': row['type']}
+                            else:
+                                out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids)}
                             writer.writerow(out_row)
 
 if __name__ == '__main__':
