@@ -240,6 +240,8 @@ def preprocess_meta_tables(inp_dir: str, out_dir: str) -> None:
                             primary_ents_out_path = join(primary_ents_out_dir, basename(csv_name))
                             venues_out_path = join(venues_out_dir, basename(csv_name))
                             resp_ags_out_path = join(resp_ags_out_dir, basename(csv_name))
+                            out_venue_rows = set()  # stores rows dicts converted to tuples in a single file (venues)
+                            out_ra_rows = set()  # stores rows dicts converted to tuples in a single file (resp_ags)
                             with archive.open(csv_name, 'r') as csv_file, open(primary_ents_out_path, 'w', newline='', encoding='utf-8') as primary_ents_out_file, open(venues_out_path, 'w', newline='', encoding='utf-8') as venues_out_file, open(resp_ags_out_path, 'w', newline='', encoding='utf-8') as resp_ags_out_file:
                                 primary_ents_writer = csv.DictWriter(primary_ents_out_file, dialect='unix', fieldnames=['omid', 'ids', 'type'])
                                 venues_writer = csv.DictWriter(venues_out_file, dialect='unix', fieldnames=['omid', 'ids'])
@@ -248,26 +250,34 @@ def preprocess_meta_tables(inp_dir: str, out_dir: str) -> None:
                                 venues_writer.writeheader()
                                 resp_ags_writer.writeheader()
                                 try:
-                                    reader = list(csv.DictReader(TextIOWrapper(csv_file, encoding='utf-8'),
-                                                                 dialect='unix'))  # todo: check if this is the best way to do it: maybe leave it as a generator?
+                                    reader = csv.DictReader(TextIOWrapper(csv_file, encoding='utf-8'), dialect='unix')  # todo: cast into a list or leave it as generator?
                                     for row in reader:
                                         primary_entity_out_row: dict = get_entity_ids_and_type(row)
                                         venue_out_row: dict = get_venue_ids(row)
-                                        # create a row for the resource uniquely identified by the OMID in the 'id' field
 
+                                        # create a row for the resource uniquely identified by the OMID in the 'id' field
                                         if primary_entity_out_row:
-                                            primary_ents_writer.writerow(primary_entity_out_row)
+                                            primary_ents_writer.writerow(primary_entity_out_row)  # primary entities are unique -> write them directly to the output file
+
                                         # create a row for the resource identified by the OMID in the 'venue' field
                                         if venue_out_row:
-                                            venues_writer.writerow(venue_out_row)
-                                    # create a row for each of the entities in the responsible agent fields ('author', 'publisher', 'editor' of the input row
+                                            out_venue_rows.add(tuple(venue_out_row.items()))
+
+                                        # create a row for each of the entities in the responsible agent fields ('author', 'publisher', 'editor' of the input row
                                         for field in ['author', 'publisher', 'editor']:
                                             for ra_out_row in get_ra_ids(row, field):
                                                 # todo: consider splitting authors, publishers, editors into separate tables
                                                 #  (and modifying the get_ra_ids function accordingly,
                                                 #  i.e. removing a then unnecessary 'ra_role' field in the output dictionary)
 
-                                                resp_ags_writer.writerow(ra_out_row)
+                                                out_ra_rows.add(tuple(ra_out_row.items()))
+
+                                    venues_writer.writerows(map(dict, out_venue_rows)) # prevent duplicates inside the same file (not in the whole dataset)
+                                    # venues_writer.writerows([dict(t) for t in out_venue_rows]) # prevent duplicates inside the same file (not in the whole dataset)
+
+                                    resp_ags_writer.writerows(map(dict, out_ra_rows))  # prevent duplicates inside the same file (not in the whole dataset)
+                                    # resp_ags_writer.writerows([dict(t) for t in out_ra_rows])  # prevent duplicates inside the same file (not in the whole dataset)
+
                                     logging.info(f'Processing {csv_name} took {time.time() - file_start_time} seconds')
                                 except csv.Error as e:
                                     logging.error(f'Error while processing {csv_name}: {e}')
