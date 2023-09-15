@@ -1,5 +1,5 @@
 from omid_openalex.preprocess.mapping import create_id_db_table, map_omid_openalex_ids
-from omid_openalex.preprocess.preprocess_dump import preprocess_meta_tables, create_oa_reduced_table
+from omid_openalex.preprocess.preprocess_dump import preprocess_meta_tables, create_openalex_ids_table
 from os.path import join
 import time
 import logging
@@ -29,32 +29,32 @@ if __name__ == '__main__':
     ## CREATE OPENALEX PRELIMINARY TABLES
     # print('Creating table for OA Works...')
     # start = time.time()
-    # create_oa_reduced_table(inp_dir=works_inp_dir, out_dir=works_out_dir, entity_type='work')
+    # create_openalex_ids_table(inp_dir=works_inp_dir, out_dir=works_out_dir, entity_type='work')
     # print('Works table created in', (time.time() - start)/3600, 'hours')
     # logging.info(f'Works table created in {(time.time() - start)/3600} hours')
     # print('Creating table for OA Sources...')
     # start = time.time()
-    # create_oa_reduced_table(inp_dir=sources_inp_dir, out_dir=sources_out_dir, entity_type='source')
+    # create_openalex_ids_table(inp_dir=sources_inp_dir, out_dir=sources_out_dir, entity_type='source')
     # print('Sources table created in', (time.time() - start)/3600, 'hours')
     # logging.info(f'Sources table created in {(time.time() - start)/3600} hours')
     # print('Creating table for OA Authors...')
     # start = time.time()
-    # create_oa_reduced_table(inp_dir=authors_inp_dir, out_dir=authors_out_dir, entity_type='author')
+    # create_openalex_ids_table(inp_dir=authors_inp_dir, out_dir=authors_out_dir, entity_type='author')
     # print('Authors table created in', (time.time() - start) / 3600, 'hours')
     # logging.info(f'Authors table created in {(time.time() - start) / 3600} hours')
     # print('Creating table for OA Publishers...')
     # start = time.time()
-    # create_oa_reduced_table(inp_dir=publishers_inp_dir, out_dir=publishers_out_dir, entity_type='publisher')
+    # create_openalex_ids_table(inp_dir=publishers_inp_dir, out_dir=publishers_out_dir, entity_type='publisher')
     # print('Publishers table created in', (time.time() - start) / 3600, 'hours')
     # logging.info(f'Publishers table created in {(time.time() - start) / 3600} hours')
     # print('Creating table for OA Institutions...')
     # start = time.time()
-    # create_oa_reduced_table(inp_dir=institutions_inp_dir, out_dir=institutions_out_dir, entity_type='institution')
+    # create_openalex_ids_table(inp_dir=institutions_inp_dir, out_dir=institutions_out_dir, entity_type='institution')
     # print('Institutions table created in', (time.time() - start) / 3600, 'hours')
     # logging.info(f'Institutions table created in {(time.time() - start) / 3600} hours')
     # print('Creating table for OA Funders...')
     # start = time.time()
-    # create_oa_reduced_table(inp_dir=funders_inp_dir, out_dir=funders_out_dir, entity_type='funder')
+    # create_openalex_ids_table(inp_dir=funders_inp_dir, out_dir=funders_out_dir, entity_type='funder')
     # print('Funders table created in', (time.time() - start) / 3600, 'hours')
     # logging.info(f'Funders table created in {(time.time() - start) / 3600} hours')
 
