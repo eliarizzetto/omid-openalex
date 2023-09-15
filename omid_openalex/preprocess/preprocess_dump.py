@@ -1,15 +1,17 @@
-from os.path import join, abspath, splitext, basename, exists, isdir, isfile
+from os.path import join, splitext, basename, isdir
 from os import listdir, makedirs, walk
 import csv
+import json
 from io import TextIOWrapper
 from zipfile import ZipFile
 from typing import Generator, Literal, Union, List, Dict, Callable
-from tqdm import tqdm
 import logging
-import time
-from datetime import datetime
 import gzip
-import json
+import sqlite3 as sql
+from csv import DictReader, DictWriter
+from tqdm import tqdm
+import time
+import pandas as pd
 
 def reduce_oa_work_row(inp_entity: dict) -> Generator[dict, None, None]:
     output_row = dict()
@@ -243,14 +245,14 @@ def preprocess_meta_tables(inp_dir: str, out_dir: str) -> None:
                             out_venue_rows = set()  # stores rows dicts converted to tuples in a single file (venues)
                             out_ra_rows = set()  # stores rows dicts converted to tuples in a single file (resp_ags)
                             with archive.open(csv_name, 'r') as csv_file, open(primary_ents_out_path, 'w', newline='', encoding='utf-8') as primary_ents_out_file, open(venues_out_path, 'w', newline='', encoding='utf-8') as venues_out_file, open(resp_ags_out_path, 'w', newline='', encoding='utf-8') as resp_ags_out_file:
-                                primary_ents_writer = csv.DictWriter(primary_ents_out_file, dialect='unix', fieldnames=['omid', 'ids', 'type'])
-                                venues_writer = csv.DictWriter(venues_out_file, dialect='unix', fieldnames=['omid', 'ids'])
-                                resp_ags_writer = csv.DictWriter(resp_ags_out_file, dialect='unix', fieldnames=['omid', 'ids', 'ra_role'])
+                                primary_ents_writer = DictWriter(primary_ents_out_file, dialect='unix', fieldnames=['omid', 'ids', 'type'])
+                                venues_writer = DictWriter(venues_out_file, dialect='unix', fieldnames=['omid', 'ids'])
+                                resp_ags_writer = DictWriter(resp_ags_out_file, dialect='unix', fieldnames=['omid', 'ids', 'ra_role'])
                                 primary_ents_writer.writeheader()
                                 venues_writer.writeheader()
                                 resp_ags_writer.writeheader()
                                 try:
-                                    reader = csv.DictReader(TextIOWrapper(csv_file, encoding='utf-8'), dialect='unix')  # todo: cast into a list or leave it as generator?
+                                    reader = DictReader(TextIOWrapper(csv_file, encoding='utf-8'), dialect='unix')  # todo: cast into a list or leave it as generator?
                                     for row in reader:
                                         primary_entity_out_row: dict = get_entity_ids_and_type(row)
                                         venue_out_row: dict = get_venue_ids(row)
@@ -301,7 +303,7 @@ def create_oa_reduced_table(inp_dir: str, out_dir: str, entity_type: Literal['wo
         process_line = reduce_oa_institution_row
     elif entity_type.lower().strip() == 'funder':
         process_line = reduce_oa_funder_row
-    # create and add functions for processing lines with other types of OA entities
+    # if needed, create and add functions for processing lines with other types of OA entities
     else:
         raise ValueError("ValueError: the entity type '{}' is not supported.".format(entity_type))
 
@@ -310,18 +312,18 @@ def create_oa_reduced_table(inp_dir: str, out_dir: str, entity_type: Literal['wo
     inp_subdirs = [name for name in listdir(inp_dir) if isdir(join(inp_dir, name))]
     for snapshot_folder_name in inp_subdirs:
         logging.info(f'Processing snapshot directory {snapshot_folder_name}')
-        snapshot_folder_path = join(abspath(inp_dir), snapshot_folder_name)
+        snapshot_folder_path = join(inp_dir, snapshot_folder_name)
         for compressed_jsonl_name in tqdm(listdir(snapshot_folder_path)):
             inp_path = join(snapshot_folder_path, compressed_jsonl_name)
             logging.info(f'Processing {compressed_jsonl_name}')
             file_start_time = time.time()
-            out_folder_path = join(abspath(out_dir), snapshot_folder_name)
+            out_folder_path = join(out_dir, snapshot_folder_name)
             makedirs(out_folder_path, exist_ok=True)
             out_filename = 'reduced_' + splitext(basename(compressed_jsonl_name))[0] + '.csv'
             out_filepath = join(out_folder_path, out_filename)
-            with gzip.open(abspath(inp_path), 'r') as inp_jsonl, open(out_filepath, 'w', newline='',
+            with gzip.open(inp_path, 'r') as inp_jsonl, open(out_filepath, 'w', newline='',
                                                                       encoding='utf-8') as out_csv:
-                writer = csv.DictWriter(out_csv, dialect='unix', fieldnames=['supported_id', 'openalex_id'])
+                writer = DictWriter(out_csv, dialect='unix', fieldnames=['supported_id', 'openalex_id'])
                 writer.writeheader()
                 for line in inp_jsonl:
                     line = json.loads(line)
@@ -333,6 +335,120 @@ def create_oa_reduced_table(inp_dir: str, out_dir: str, entity_type: Literal['wo
             logging.info(f'Processing {compressed_jsonl_name} took {time.time() - file_start_time} seconds')
     logging.info(
         f'Processing input folder {inp_dir} for OpenAlex table creation took {(time.time() - process_start_time) / 60} minutes')
+
+def create_id_db_table(inp_dir:str, db_path:str, id_type:Literal['doi', 'pmid', 'pmcid', 'wikidata', 'issn'], entity_type: Literal['work', 'source'])-> None:
+    """
+    Creates and indexes a database table containing the IDs of the specified type for the specified entity type.
+    Creates a table (if it doesn't already exist) and names it with the name of the ID type passed as a parameter
+    (one among "doi", "pmid", "pmcid, etc."). Then, for each csv file in the input directory, the file is converted
+    to a pandas DataFrame and then appended to the database table. The DataFrames, each of which corresponds to
+    a single file,are appended one at a time.
+        :param inp_dir: the folder containing the csv files to be processed (the preliminary tables of the form: supported_id, openalex_id)
+        :param db_path: the path to the database file
+        :param id_type: the type of ID to be processed (one among "doi", "pmid", "pmcid", "wikidata", "issn")
+        :param entity_type:
+        :return:
+    """
+
+    table_name = f'{entity_type.capitalize()}s{id_type.capitalize()}'
+    start_time = time.time()
+    with sql.connect(db_path) as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+        if cursor.fetchone():
+            raise ValueError(f"Table {table_name} already exists")
+
+        for root, dirs, files in walk(inp_dir):
+            for file in tqdm(files):
+                if file.endswith('.csv'):
+                    csv_path = join(root, file)
+                    file_df = pd.read_csv(csv_path)  # Read the CSV file into a DataFrame
+
+                    # Select only the rows with the ID type specified as a parameter and create a new DataFrame
+                    id_df = file_df[file_df['supported_id'].str.startswith(id_type)]
+
+                    # Append the DataFrame's rows to the existing table in the database
+                    id_df.to_sql(table_name, conn, if_exists='append', index=False)
+
+        print('Creating index...')
+        create_idx_query = "CREATE INDEX idx_{} ON {}(supported_id);".format(table_name.lower(), table_name)
+        cursor.execute(create_idx_query)
+
+    print(f"Creating and indexing the database table for {id_type.upper()}s took {(time.time()-start_time)/60} minutes")
+
+def map_omid_openalex_ids(inp_dir:str, db_path:str, out_dir: str, res_type_field=True) -> None:
+    """
+    Creates a mapping table between OMIDs and OpenAlex IDs.
+    :param inp_dir: path to the folder containing the reduced OC Meta tables
+    :param db_path: path to the database file
+    :param out_dir: path to the folder where the mapping table should be saved
+    :param res_type_field: if True, the mapping table will contain the type of the entity (use for IDs from the OC Meta
+        'id' field) otherwise it will not (use for IDs from the OC Meta 'venue' field)
+    :return: None
+    """
+    makedirs(out_dir, exist_ok=True)
+    with sql.connect(db_path) as conn:
+        cursor = conn.cursor()
+        for root, dirs, files in walk(inp_dir):
+            for file_name in tqdm(files):
+                with open(join(root, file_name), 'r', encoding='utf-8') as inp_file, open(join(out_dir, file_name), 'w', encoding='utf-8', newline='') as out_file:
+                    reader = DictReader(inp_file)
+                    if res_type_field:
+                        writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id', 'type'])
+                    else:
+                        writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id'])
+                    writer.writeheader()
+
+                    for row in reader:
+                        entity_ids: list = row['ids'].split()
+                        oa_ids = set()
+
+                        # if there is an ISSN for the entity in OC Meta, look only for ISSN in OpenAlex
+                        if any(x.startswith('issn:') for x in entity_ids):
+                            for pid in entity_ids:
+                                if pid.startswith('issn'):
+                                    query = "SELECT openalex_id FROM SourcesIssn WHERE supported_id=?"
+                                    cursor.execute(query, (pid,))
+                                    for res in cursor.fetchall():
+                                        oa_ids.add(res[0])
+                                else:
+                                    continue
+
+                        # if there is a DOI for the entity in OC Meta and no ISSNs, look only for DOI in OpenAlex
+                        elif any(x.startswith('doi:') for x in entity_ids):
+                            for pid in entity_ids:
+                                if pid.startswith('doi:'):
+                                    query = "SELECT openalex_id FROM WorksDoi WHERE supported_id=?"
+                                    cursor.execute(query, (pid,))
+                                    for res in cursor.fetchall():
+                                        oa_ids.add(res[0])
+                                else:
+                                    continue
+
+                        # if there is no ISSN nor DOI for the entity in OC Meta, look for all the other IDs in OpenAlex
+                        else:
+                            for pid in entity_ids:
+                                if pid.startswith('pmid:'):
+                                    curr_lookup_table = 'WorksPmid'
+                                elif pid.startswith('pmcid:'):
+                                    curr_lookup_table = 'WorksPmcid'
+                                elif pid.startswith('wikidata:'):
+                                    curr_lookup_table = 'SourcesWikidata'
+                                else:
+                                    # only PIDs for bibliographic resources supported by both OC Meta and OpenAlex are considered
+                                    continue
+                                query = "SELECT openalex_id FROM {} WHERE supported_id=?".format(curr_lookup_table)
+                                cursor.execute(query, (pid,))
+                                for res in cursor.fetchall():
+                                    oa_ids.add(res[0])
+
+                        if oa_ids:
+                            if res_type_field:
+                                out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids), 'type': row['type']}
+                            else:
+                                out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids)}
+                            writer.writerow(out_row)
 
 
 # if __name__ == '__main__':
