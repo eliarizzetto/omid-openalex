@@ -21,10 +21,20 @@ class OpenAlexProcessor:
         with open(config, encoding='utf-8') as file:
             settings = yaml.full_load(file)
         self.config = config
-        self.inp_dir:str = settings['inp_dir']
-        self.out_dir:str = settings['out_dir']
-        self.db_path:str = settings['db_path']
-        # self.entity_types_to_process:str = settings['entity_types_to_process']
+        self.meta_in: str = settings['meta_inp_dir']
+        self.meta_ids_out: str = settings['meta_ids_out_dir']
+
+        self.openalex_works_in = settings['openalex_works_input_dir']
+        self.openalex_sources_in = settings['openalex_sources_input_dir']
+        self.openalex_authors_in = settings['openalex_authors_input_dir']
+        self.openalex_publishers_in = settings['openalex_publishers_input_dir']
+        self.openalex_institutions_in = settings['openalex_institutions_input_dir']
+        self.openalex_funders_in = settings['openalex_funders_input_dir']
+        self.openalex_ids_out = settings['openalex_ids_output_dir']
+
+        self.mapping_out_dir: str = settings['mapping_out_dir']
+        self.db_path: str = settings['db_path']
+        self.entity_types_to_process: list = settings['entity_types_to_process'] # OpenAlex entity types to map
 
     @staticmethod
     def get_work_ids(inp_entity: dict) -> Generator[dict, None, None]:
@@ -137,7 +147,7 @@ class OpenAlexProcessor:
                 output_row = {'supported_id': item, 'openalex_id': openalex_id}
                 yield output_row
 
-    def create_openalex_ids_table(self, inp_dir:str, out_dir: str, entity_type: Literal[
+    def create_openalex_ids_table(self, inp_dir: str, out_dir: str, entity_type: Literal[
         'work', 'source', 'author', 'publisher', 'institution', 'funder']) -> None:
         # Literal['work', 'source', 'author', 'publisher', 'institution', 'funder']
 
@@ -186,7 +196,8 @@ class OpenAlexProcessor:
         logging.info(
             f'Processing input folder {inp_dir} for OpenAlex table creation took {(time.time() - process_start_time) / 60} minutes')
 
-    def create_id_db_table(self, inp_dir: str, db_path: str, id_type: Literal['doi', 'pmid', 'pmcid', 'wikidata', 'issn'],
+    def create_id_db_table(self, inp_dir: str, db_path: str,
+                           id_type: Literal['doi', 'pmid', 'pmcid', 'wikidata', 'issn'],
                            entity_type: Literal['work', 'source']) -> None:
         """
         Creates and indexes a database table containing the IDs of the specified type for the specified entity type.
@@ -228,6 +239,7 @@ class OpenAlexProcessor:
 
         print(
             f"Creating and indexing the database table for {id_type.upper()}s took {(time.time() - start_time) / 60} minutes")
+
 
 def get_entity_ids(row: dict) -> Union[dict, None]:
     output_row = dict()
@@ -408,9 +420,6 @@ def preprocess_meta_tables(inp_dir: str, out_dir: str) -> None:
 
                         # logging.info(
                         #     f'Processing input folder {inp_dir} for reduced OC Meta table creation took {time.time() - process_start_time} seconds')
-
-
-
 
 
 def map_omid_openalex_ids(inp_dir: str, db_path: str, out_dir: str, res_type_field=True) -> None:
