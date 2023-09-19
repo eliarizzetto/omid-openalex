@@ -13,15 +13,13 @@ from tqdm import tqdm
 import time
 import pandas as pd
 import yaml
+import argparse
 
 
 class MetaProcessor:
-    def __init__(self, config: str):
-        with open(config, encoding='utf-8') as file:
-            settings = yaml.full_load(file)
-        self.config = config
-        self.meta_in: str = settings['meta_inp_dir']
-        self.meta_ids_out: str = settings['meta_ids_out_dir']
+    def __init__(self, meta_inp_dir: str, meta_ids_out_dir: str):
+        self.meta_in: str = meta_inp_dir
+        self.meta_ids_out: str = meta_ids_out_dir
 
     @staticmethod
     def get_entity_ids(row: dict) -> Union[dict, None]:
@@ -203,7 +201,7 @@ class MetaProcessor:
 
 
 class Mapping:
-    def __init__(self, config: str):
+    def __init__(self):
         pass
         # with open(config, encoding='utf-8') as file:
         #     settings = yaml.full_load(file)
@@ -212,7 +210,7 @@ class Mapping:
         # self.mapping_out_dir: str = settings['mapping_out_dir']
 
     @staticmethod
-    def map_omid_openalex_ids(self, inp_dir: str, db_path: str, out_dir: str, res_type_field=True) -> None:
+    def map_omid_openalex_ids(inp_dir: str, db_path: str, out_dir: str, res_type_field=True) -> None:
         """
         Creates a mapping table between OMIDs and OpenAlex IDs.
         :param inp_dir: path to the folder containing the reduced OC Meta tables
@@ -515,6 +513,45 @@ class OpenAlexProcessor:
             f"Creating and indexing the database table for {id_type.upper()}s took {(time.time() - start_time) / 60} minutes")
 
 
-# Process
 if __name__ == '__main__':
-    pass
+    parser = argparse.ArgumentParser(description='Process and map OMID to OpenAlex IDs.')
+    parser.add_argument('--config', '-c', dest='config', type=str, default='config.yaml',
+                        help='Path to the YAML configuration file.')
+
+    # Add command line arguments for map_omid_openalex_ids
+    parser.add_argument('-i', '--inp_dir', dest='inp_dir', type=str, help='Input directory for map_omid_openalex_ids')
+    parser.add_argument('-db', '--db_path', dest='db_path', type=str, help='Database path for map_omid_openalex_ids')
+    parser.add_argument('-o', '--out_dir', dest='out_dir', type=str, help='Output directory for map_omid_openalex_ids')
+    parser.add_argument('-t', '--res_type_field', dest='res_type_field', type=bool, default=True, help='Whether to include the resource type field in the mapping tables')
+
+    args = parser.parse_args()
+
+    # Load configuration from the specified YAML file
+    with open(args.config, 'r', encoding='utf-8') as config_file:
+        settings = yaml.full_load(config_file)
+
+    # Create instances of classes with configuration
+    meta_processor = MetaProcessor(**settings['meta_config'])
+    openalex_processor = OpenAlexProcessor()
+    mapping = Mapping()
+
+    # Call functions with CLI arguments and configuration
+    meta_processor.preprocess_meta_tables()
+
+    # Create CSV table for OpenAlex Work IDs
+    openalex_processor.create_openalex_ids_table(**settings['openalex_works'])
+    # Create CSV table for OpenAlex Source IDs
+    openalex_processor.create_openalex_ids_table(**settings['openalex_sources'])
+
+    # Create database tables for PIDs in OpenAlex
+    openalex_processor.create_id_db_table(**settings['db_works_doi'])
+    openalex_processor.create_id_db_table(**settings['db_works_pmid'])
+    openalex_processor.create_id_db_table(**settings['db_works_pmcid'])
+    openalex_processor.create_id_db_table(**settings['db_sources_issn'])
+    openalex_processor.create_id_db_table(**settings['db_sources_wikidata'])
+
+    mapping_inp_dir = 
+
+    # Pass the CLI arguments to map_omid_openalex_ids
+    mapping.map_omid_openalex_ids(args.inp_dir, args.db_path, args.out_dir)
+
