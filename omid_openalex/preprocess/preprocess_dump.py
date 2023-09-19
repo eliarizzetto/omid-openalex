@@ -518,11 +518,11 @@ if __name__ == '__main__':
     parser.add_argument('--config', '-c', dest='config', type=str, default='config.yaml',
                         help='Path to the YAML configuration file.')
 
-    # Add command line arguments for map_omid_openalex_ids
-    parser.add_argument('-i', '--inp_dir', dest='inp_dir', type=str, help='Input directory for map_omid_openalex_ids')
-    parser.add_argument('-db', '--db_path', dest='db_path', type=str, help='Database path for map_omid_openalex_ids')
-    parser.add_argument('-o', '--out_dir', dest='out_dir', type=str, help='Output directory for map_omid_openalex_ids')
-    parser.add_argument('-t', '--res_type_field', dest='res_type_field', type=bool, default=True, help='Whether to include the resource type field in the mapping tables')
+    # ## Add command line arguments for map_omid_openalex_ids
+    # parser.add_argument('-i', '--inp_dir', dest='inp_dir', type=str, help='Input directory for map_omid_openalex_ids')
+    # parser.add_argument('-db', '--db_path', dest='db_path', type=str, help='Database path for map_omid_openalex_ids')
+    # parser.add_argument('-o', '--out_dir', dest='out_dir', type=str, help='Output directory for map_omid_openalex_ids')
+    # parser.add_argument('-t', '--res_type_field', dest='res_type_field', type=bool, default=True, help='Whether to include the resource type field in the mapping tables')
 
     args = parser.parse_args()
 
@@ -550,8 +550,6 @@ if __name__ == '__main__':
     openalex_processor.create_id_db_table(**settings['db_sources_issn'])
     openalex_processor.create_id_db_table(**settings['db_sources_wikidata'])
 
-    mapping_inp_dir = 
-
-    # Pass the CLI arguments to map_omid_openalex_ids
-    mapping.map_omid_openalex_ids(args.inp_dir, args.db_path, args.out_dir)
+    # Map OMID to OpenAlex IDs
+    mapping.map_omid_openalex_ids(**settings['mapping'])
 

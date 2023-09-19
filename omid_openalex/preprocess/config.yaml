@@ -64,7 +64,7 @@ db_sources_wikidata:
 #    id_type: 'orcid'
 #    entity_type: 'author'
 
-mapping_config:
+mapping:
   inp_dir: 'input_data'
   db_path: 'openalex.db'
   out_dir: 'output_mapping'
