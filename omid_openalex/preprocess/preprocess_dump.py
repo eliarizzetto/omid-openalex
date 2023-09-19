@@ -15,8 +15,7 @@ import pandas as pd
 import yaml
 
 
-class OpenAlexProcessor:
-
+class MetaProcessor:
     def __init__(self, config: str):
         with open(config, encoding='utf-8') as file:
             settings = yaml.full_load(file)
@@ -24,17 +23,291 @@ class OpenAlexProcessor:
         self.meta_in: str = settings['meta_inp_dir']
         self.meta_ids_out: str = settings['meta_ids_out_dir']
 
-        self.openalex_works_in = settings['openalex_works_input_dir']
-        self.openalex_sources_in = settings['openalex_sources_input_dir']
-        self.openalex_authors_in = settings['openalex_authors_input_dir']
-        self.openalex_publishers_in = settings['openalex_publishers_input_dir']
-        self.openalex_institutions_in = settings['openalex_institutions_input_dir']
-        self.openalex_funders_in = settings['openalex_funders_input_dir']
-        self.openalex_ids_out = settings['openalex_ids_output_dir']
+    @staticmethod
+    def get_entity_ids(row: dict) -> Union[dict, None]:
+        output_row = dict()
+        output_row['omid'] = ''
+        output_row['ids'] = []
+        output_row['type'] = row['type']
 
-        self.mapping_out_dir: str = settings['mapping_out_dir']
-        self.db_path: str = settings['db_path']
-        self.entity_types_to_process: list = settings['entity_types_to_process'] # OpenAlex entity types to map
+        # get resource's omid and other IDs
+        for id in row['id'].split():
+            if id.startswith('omid:'):  # todo: change 'meta' to 'omid'
+                output_row['omid'] = id
+            else:  # i.e., if prefix is one of: 'doi:','pmid:','pmcid:','issn:','isbn:','wikidata:'
+                output_row['ids'].append(id)
+        if output_row['ids']:  # if the resource has at least one external ID that is supported by OpenAlex
+            output_row['ids'] = ' '.join(output_row['ids'])
+            return output_row
+
+    @staticmethod
+    def get_venue_ids(row: dict) -> Union[dict, None]:
+        """
+        Extracts the IDs in the value of the 'venue' field from a row of the OC Meta dump.
+            :param row: dict representing a row of the OC Meta dump
+            :return: dict with the OMID and the PIDs of the entity in the venue field
+        """
+        output_row = dict()
+        output_row['omid'] = ''
+        output_row['ids'] = []
+        # entity_type = row['type']
+        # todo: maybe the value of type (corresponding to the type of the row entity, not the venue)
+        #  is useful for determining which IDs to consider?? E.g. if type is 'journal article', then the venue should be
+        #   a journal, so we should consider only journal IDs (ISSN) and not book IDs (DOIs).
+
+        # get resource's omid and other IDs
+        v = row['venue']
+        if v:
+            venue_ids = v[v.index('[') + 1:v.index(
+                ']')].strip().split()  # TODO: NOTE: THIS ASSUMES THAT THE VENUE FIELD IS ALWAYS IN THE SAME FORMAT, IE ALWAYS SQUARE BRACKETS AND ALWAYS ONE SINGLE VENUE!
+            for id in venue_ids:
+                if id.startswith('omid:'):  # todo: change 'meta' to 'omid'
+                    output_row['omid'] = id
+                else:  # i.e., if prefix is one of: 'doi:','pmid:','pmcid:','issn:','isbn:','wikidata:'
+                    output_row['ids'].append(id)
+
+            if output_row['ids']:  # if the entity in venue has at least one external ID that is supported by OpenAlex
+                output_row['ids'] = ' '.join(output_row['ids'])
+                return output_row
+        else:
+            return None
+
+    @staticmethod
+    def get_ra_ids(row: dict, field: Literal['author', 'publisher', 'editor']) -> Generator[dict, None, None]:
+        output_row = dict()
+        if row[field]:
+            if field == 'publisher':  # no separator in the publisher field -> only one entity!
+                entities = [row[field]]
+            else:  # author and editor fields can contain multiple entities, separated by '; '
+                entities = row[field].split('; ')
+            for ra_entity in entities:
+                output_row['omid'] = ''
+                output_row['ids'] = []
+                output_row['ra_role'] = field
+                ra_entity = ra_entity.strip()
+                try:
+                    start = ra_entity.index('[') + 1
+                    end = ra_entity.index(']')
+                    for ra_id in ra_entity[start:end].strip().split():
+                        if ra_id.startswith('omid:'):  # todo: change 'meta' to 'omid'
+                            output_row['omid'] = ra_id
+                        else:
+                            output_row['ids'].append(ra_id)
+                    if output_row['ids']:
+                        output_row['ids'] = ' '.join(output_row['ids'])
+                        yield output_row
+                except ValueError:
+                    # print(f'Error: {field} field of row {row} is not in the expected format. The entity corresponding to {ra_entity} is not processed.')
+                    logging.error(
+                        f'Error: {field} field of row {row} is not in the expected format. The entity corresponding to {ra_entity} is not processed.')
+                    continue
+
+    def preprocess_meta_tables(self) -> None:
+        """
+        Preprocesses the OC Meta tables to create reduced tables with essential metadata. For each entity represented in a
+        row in the original table, the reduced output table contains the OMID ('omid' field) and the PIDs ('ids' field) of
+        the entity, as well as the type of resource ('type' field).
+        For the entity in the 'venue' field of a row in the original table, the reduced output table only contains the OMID
+        and the PIDs of the entity ('omid' and 'ids' fields).
+        For each entity in the 'author', 'publisher', and 'editor' fields of a row in the original table, the reduced output
+        table contains the OMID and the PIDs of the entity ('omid' and 'ids' fields), as well as the role of the entity
+        ('ra_role' field, with the value being one of 'author', 'publisher', or 'editor').
+            :param inp_dir: the directory where the OC Meta tables are stored
+            :param out_dir: the directory where the reduced tables will be written, named with the same name as the original
+             but prefixed with:
+                * 'primary_ents_' if the table concerns the entity whose IDs are stored in the 'id' field of
+                 the original table
+                * prefixed with 'venues_' if the table concerns the entity whose IDs are stored in the
+                 'venue' field of the original table
+                * prefixed with 'resp_ags_' if the table concerns the entities whose IDs are stored in the 'author', 'publisher',
+                    or 'editor' fields of the original table
+            :return: None (writes the reduced tables to disk)
+        """
+        csv.field_size_limit(131072 * 4)  # quadruple the default limit for csv field size
+        primary_ents_out_dir = join(self.meta_ids_out, 'primary_ents')
+        makedirs(primary_ents_out_dir, exist_ok=True)
+        venues_out_dir = join(self.meta_ids_out, 'venues')
+        makedirs(venues_out_dir, exist_ok=True)
+        resp_ags_out_dir = join(self.meta_ids_out, 'resp_ags')
+        makedirs(resp_ags_out_dir, exist_ok=True)
+        logging.info(f'Processing input folder {self.meta_in} for reduced OC Meta table creation')
+        process_start_time = time.time()
+        for root, dirs, files in walk(self.meta_in):
+            for file in files:
+                if file.endswith('.zip'):
+                    archive_path = join(root, file)
+                    with ZipFile(archive_path) as archive:
+                        for csv_name in tqdm(archive.namelist()):
+                            if csv_name.endswith('.csv'):
+                                logging.info(f'Processing {csv_name}')
+                                file_start_time = time.time()
+                                primary_ents_out_path = join(primary_ents_out_dir, basename(csv_name))
+                                venues_out_path = join(venues_out_dir, basename(csv_name))
+                                resp_ags_out_path = join(resp_ags_out_dir, basename(csv_name))
+                                out_venue_rows = set()  # stores rows dicts converted to tuples in a single file (venues)
+                                out_ra_rows = set()  # stores rows dicts converted to tuples in a single file (resp_ags)
+                                with archive.open(csv_name, 'r') as csv_file, open(primary_ents_out_path, 'w',
+                                                                                   newline='',
+                                                                                   encoding='utf-8') as primary_ents_out_file, open(
+                                    venues_out_path, 'w', newline='', encoding='utf-8') as venues_out_file, open(
+                                    resp_ags_out_path, 'w', newline='', encoding='utf-8') as resp_ags_out_file:
+                                    primary_ents_writer = DictWriter(primary_ents_out_file, dialect='unix',
+                                                                     fieldnames=['omid', 'ids', 'type'])
+                                    venues_writer = DictWriter(venues_out_file, dialect='unix',
+                                                               fieldnames=['omid', 'ids'])
+                                    resp_ags_writer = DictWriter(resp_ags_out_file, dialect='unix',
+                                                                 fieldnames=['omid', 'ids', 'ra_role'])
+                                    primary_ents_writer.writeheader()
+                                    venues_writer.writeheader()
+                                    resp_ags_writer.writeheader()
+                                    try:
+                                        reader = DictReader(TextIOWrapper(csv_file, encoding='utf-8'),
+                                                            dialect='unix')  # todo: cast into a list or leave it as generator?
+                                        for row in reader:
+                                            primary_entity_out_row: dict = self.get_entity_ids(row)
+                                            venue_out_row: dict = self.get_venue_ids(row)
+
+                                            # create a row for the resource uniquely identified by the OMID in the 'id' field
+                                            if primary_entity_out_row:
+                                                primary_ents_writer.writerow(
+                                                    primary_entity_out_row)  # primary entities are unique -> write them directly to the output file
+
+                                            # create a row for the resource identified by the OMID in the 'venue' field
+                                            if venue_out_row:
+                                                out_venue_rows.add(tuple(venue_out_row.items()))
+
+                                            # create a row for each of the entities in the responsible agent fields ('author', 'publisher', 'editor' of the input row
+                                            for field in ['author', 'publisher', 'editor']:
+                                                for ra_out_row in self.get_ra_ids(row, field):
+                                                    # todo: consider splitting authors, publishers, editors into separate tables
+                                                    #  (and modifying the get_ra_ids function accordingly,
+                                                    #  i.e. removing a then unnecessary 'ra_role' field in the output dictionary)
+
+                                                    out_ra_rows.add(tuple(ra_out_row.items()))
+
+                                        venues_writer.writerows(map(dict,
+                                                                    out_venue_rows))  # prevent duplicates inside the same file (not in the whole dataset)
+                                        # venues_writer.writerows([dict(t) for t in out_venue_rows]) # prevent duplicates inside the same file (not in the whole dataset)
+
+                                        resp_ags_writer.writerows(map(dict,
+                                                                      out_ra_rows))  # prevent duplicates inside the same file (not in the whole dataset)
+                                        # resp_ags_writer.writerows([dict(t) for t in out_ra_rows])  # prevent duplicates inside the same file (not in the whole dataset)
+
+                                        logging.info(
+                                            f'Processing {csv_name} took {time.time() - file_start_time} seconds')
+                                    except csv.Error as e:
+                                        logging.error(f'Error while processing {csv_name}: {e}')
+
+                            # logging.info(
+                            #     f'Processing input folder {inp_dir} for reduced OC Meta table creation took {time.time() - process_start_time} seconds')
+
+
+class Mapping:
+    def __init__(self, config: str):
+        pass
+        # with open(config, encoding='utf-8') as file:
+        #     settings = yaml.full_load(file)
+        # self.config = config
+        # self.mapping_in_dir: str = settings['mapping_in_dir']
+        # self.mapping_out_dir: str = settings['mapping_out_dir']
+
+    @staticmethod
+    def map_omid_openalex_ids(self, inp_dir: str, db_path: str, out_dir: str, res_type_field=True) -> None:
+        """
+        Creates a mapping table between OMIDs and OpenAlex IDs.
+        :param inp_dir: path to the folder containing the reduced OC Meta tables
+        :param db_path: path to the database file
+        :param out_dir: path to the folder where the mapping table should be saved
+        :param res_type_field: if True, the mapping table will contain the type of the entity (use for IDs from the OC Meta
+            'id' field) otherwise it will not (use for IDs from the OC Meta 'venue' field)
+        :return: None
+        """
+        makedirs(out_dir, exist_ok=True)
+        with sql.connect(db_path) as conn:
+            cursor = conn.cursor()
+            for root, dirs, files in walk(inp_dir):
+                for file_name in tqdm(files):
+                    with open(join(root, file_name), 'r', encoding='utf-8') as inp_file, open(join(out_dir, file_name),
+                                                                                              'w',
+                                                                                              encoding='utf-8',
+                                                                                              newline='') as out_file:
+                        reader = DictReader(inp_file)
+                        if res_type_field:
+                            writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id', 'type'])
+                        else:
+                            writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id'])
+                        writer.writeheader()
+
+                        for row in reader:
+                            entity_ids: list = row['ids'].split()
+                            oa_ids = set()
+
+                            # if there is an ISSN for the entity in OC Meta, look only for ISSN in OpenAlex
+                            if any(x.startswith('issn:') for x in entity_ids):
+                                for pid in entity_ids:
+                                    if pid.startswith('issn'):
+                                        query = "SELECT openalex_id FROM SourcesIssn WHERE supported_id=?"
+                                        cursor.execute(query, (pid,))
+                                        for res in cursor.fetchall():
+                                            oa_ids.add(res[0])
+                                    else:
+                                        continue
+
+                            # if there is a DOI for the entity in OC Meta and no ISSNs, look only for DOI in OpenAlex
+                            elif any(x.startswith('doi:') for x in entity_ids):
+                                for pid in entity_ids:
+                                    if pid.startswith('doi:'):
+                                        query = "SELECT openalex_id FROM WorksDoi WHERE supported_id=?"
+                                        cursor.execute(query, (pid,))
+                                        for res in cursor.fetchall():
+                                            oa_ids.add(res[0])
+                                    else:
+                                        continue
+
+                            # if there is no ISSN nor DOI for the entity in OC Meta, look for all the other IDs in OpenAlex
+                            else:
+                                for pid in entity_ids:
+                                    if pid.startswith('pmid:'):
+                                        curr_lookup_table = 'WorksPmid'
+                                    elif pid.startswith('pmcid:'):
+                                        curr_lookup_table = 'WorksPmcid'
+                                    elif pid.startswith('wikidata:'):
+                                        curr_lookup_table = 'SourcesWikidata'
+                                    else:
+                                        # only PIDs for bibliographic resources supported by both OC Meta and OpenAlex are considered
+                                        continue
+                                    query = "SELECT openalex_id FROM {} WHERE supported_id=?".format(curr_lookup_table)
+                                    cursor.execute(query, (pid,))
+                                    for res in cursor.fetchall():
+                                        oa_ids.add(res[0])
+
+                            if oa_ids:
+                                if res_type_field:
+                                    out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids),
+                                               'type': row['type']}
+                                else:
+                                    out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids)}
+                                writer.writerow(out_row)
+
+
+class OpenAlexProcessor:
+
+    def __init__(self):
+        pass
+        # with open(config, encoding='utf-8') as file:
+        #     settings = yaml.full_load(file)
+        # self.config = config
+        #
+        # self.openalex_works_in = settings['openalex_works_input_dir']
+        # self.openalex_sources_in = settings['openalex_sources_input_dir']
+        # self.openalex_authors_in = settings['openalex_authors_input_dir']
+        # self.openalex_publishers_in = settings['openalex_publishers_input_dir']
+        # self.openalex_institutions_in = settings['openalex_institutions_input_dir']
+        # self.openalex_funders_in = settings['openalex_funders_input_dir']
+        # self.openalex_ids = settings[
+        #     'openalex_ids']  # the dir where the ids extracted from openalex are stored in CSV files
+        # self.db_path: str = settings['db_path']
+        # self.entity_types_to_process: list = settings['entity_types_to_process']  # OpenAlex entity types to map
 
     @staticmethod
     def get_work_ids(inp_entity: dict) -> Generator[dict, None, None]:
@@ -196,7 +469,8 @@ class OpenAlexProcessor:
         logging.info(
             f'Processing input folder {inp_dir} for OpenAlex table creation took {(time.time() - process_start_time) / 60} minutes')
 
-    def create_id_db_table(self, inp_dir: str, db_path: str,
+    @staticmethod
+    def create_id_db_table(inp_dir: str, db_path: str,
                            id_type: Literal['doi', 'pmid', 'pmcid', 'wikidata', 'issn'],
                            entity_type: Literal['work', 'source']) -> None:
         """
@@ -241,270 +515,6 @@ class OpenAlexProcessor:
             f"Creating and indexing the database table for {id_type.upper()}s took {(time.time() - start_time) / 60} minutes")
 
 
-def get_entity_ids(row: dict) -> Union[dict, None]:
-    output_row = dict()
-    output_row['omid'] = ''
-    output_row['ids'] = []
-    output_row['type'] = row['type']
-
-    # get resource's omid and other IDs
-    for id in row['id'].split():
-        if id.startswith('omid:'):  # todo: change 'meta' to 'omid'
-            output_row['omid'] = id
-        else:  # i.e., if prefix is one of: 'doi:','pmid:','pmcid:','issn:','isbn:','wikidata:'
-            output_row['ids'].append(id)
-    #  todo: add support for other IDs (e.g., arxiv, isbn, issn, etc.)?? First see how the Oc MEta dump is
-    #   structured: you can consider creating one single table for OC Meta as a first step, and then separate
-    #   single resources and venues in the processing phase (according to the 'type'), since single resources
-    #   and venues are placed in the same dump in OC Meta, but in different directories in OpenAlex.
-
-    if output_row['ids']:  # if the resource has at least one external ID that is supported by OpenAlex
-        output_row['ids'] = ' '.join(output_row['ids'])
-        return output_row
-
-
-def get_venue_ids(row: dict) -> Union[dict, None]:
-    """
-    Extracts the IDs in the value of the 'venue' field from a row of the OC Meta dump.
-        :param row: dict representing a row of the OC Meta dump
-        :return: dict with the OMID and the PIDs of the entity in the venue field
-    """
-    output_row = dict()
-    output_row['omid'] = ''
-    output_row['ids'] = []
-    # entity_type = row['type']
-    # todo: maybe the value of type (corresponding to the type of the row entity, not the venue)
-    #  is useful for determining which IDs to consider?? E.g. if type is 'journal article', then the venue should be
-    #   a journal, so we should consider only journal IDs (ISSN) and not book IDs (DOIs).
-
-    # get resource's omid and other IDs
-    v = row['venue']
-    if v:
-        venue_ids = v[v.index('[') + 1:v.index(
-            ']')].strip().split()  # TODO: NOTE: THIS ASSUMES THAT THE VENUE FIELD IS ALWAYS IN THE SAME FORMAT, IE ALWAYS SQUARE BRACKETS AND ALWAYS ONE SINGLE VENUE!
-        for id in venue_ids:
-            if id.startswith('omid:'):  # todo: change 'meta' to 'omid'
-                output_row['omid'] = id
-            else:  # i.e., if prefix is one of: 'doi:','pmid:','pmcid:','issn:','isbn:','wikidata:'
-                output_row['ids'].append(id)
-
-        if output_row['ids']:  # if the entity in venue has at least one external ID that is supported by OpenAlex
-            output_row['ids'] = ' '.join(output_row['ids'])
-            return output_row
-    else:
-        return None
-
-
-def get_ra_ids(row: dict, field: Literal['author', 'publisher', 'editor']) -> Generator[dict, None, None]:
-    output_row = dict()
-    if row[field]:
-        if field == 'publisher':  # no separator in the publisher field -> only one entity!
-            entities = [row[field]]
-        else:  # author and editor fields can contain multiple entities, separated by '; '
-            entities = row[field].split('; ')
-        for ra_entity in entities:
-            output_row['omid'] = ''
-            output_row['ids'] = []
-            output_row['ra_role'] = field
-            ra_entity = ra_entity.strip()
-            try:
-                start = ra_entity.index('[') + 1
-                end = ra_entity.index(']')
-                for ra_id in ra_entity[start:end].strip().split():
-                    if ra_id.startswith('omid:'):  # todo: change 'meta' to 'omid'
-                        output_row['omid'] = ra_id
-                    else:
-                        output_row['ids'].append(ra_id)
-                if output_row['ids']:
-                    output_row['ids'] = ' '.join(output_row['ids'])
-                    yield output_row
-            except ValueError:
-                # print(f'Error: {field} field of row {row} is not in the expected format. The entity corresponding to {ra_entity} is not processed.')
-                logging.error(
-                    f'Error: {field} field of row {row} is not in the expected format. The entity corresponding to {ra_entity} is not processed.')
-                continue
-
-
-def preprocess_meta_tables(inp_dir: str, out_dir: str) -> None:
-    """
-    Preprocesses the OC Meta tables to create reduced tables with essential metadata. For each entity represented in a
-    row in the original table, the reduced output table contains the OMID ('omid' field) and the PIDs ('ids' field) of
-    the entity, as well as the type of resource ('type' field).
-    For the entity in the 'venue' field of a row in the original table, the reduced output table only contains the OMID
-    and the PIDs of the entity ('omid' and 'ids' fields).
-    For each entity in the 'author', 'publisher', and 'editor' fields of a row in the original table, the reduced output
-    table contains the OMID and the PIDs of the entity ('omid' and 'ids' fields), as well as the role of the entity
-    ('ra_role' field, with the value being one of 'author', 'publisher', or 'editor').
-        :param inp_dir: the directory where the OC Meta tables are stored
-        :param out_dir: the directory where the reduced tables will be written, named with the same name as the original
-         but prefixed with:
-            * 'primary_ents_' if the table concerns the entity whose IDs are stored in the 'id' field of
-             the original table
-            * prefixed with 'venues_' if the table concerns the entity whose IDs are stored in the
-             'venue' field of the original table
-            * prefixed with 'resp_ags_' if the table concerns the entities whose IDs are stored in the 'author', 'publisher',
-                or 'editor' fields of the original table
-        :return: None (writes the reduced tables to disk)
-    """
-    csv.field_size_limit(131072 * 4)  # quadruple the default limit for csv field size
-    primary_ents_out_dir = join(out_dir, 'primary_ents')
-    makedirs(primary_ents_out_dir, exist_ok=True)
-    venues_out_dir = join(out_dir, 'venues')
-    makedirs(venues_out_dir, exist_ok=True)
-    resp_ags_out_dir = join(out_dir, 'resp_ags')
-    makedirs(resp_ags_out_dir, exist_ok=True)
-    logging.info(f'Processing input folder {inp_dir} for reduced OC Meta table creation')
-    process_start_time = time.time()
-    for root, dirs, files in walk(inp_dir):
-        for file in files:
-            if file.endswith('.zip'):
-                archive_path = join(root, file)
-                with ZipFile(archive_path) as archive:
-                    for csv_name in tqdm(archive.namelist()):
-                        if csv_name.endswith('.csv'):
-                            logging.info(f'Processing {csv_name}')
-                            file_start_time = time.time()
-                            primary_ents_out_path = join(primary_ents_out_dir, basename(csv_name))
-                            venues_out_path = join(venues_out_dir, basename(csv_name))
-                            resp_ags_out_path = join(resp_ags_out_dir, basename(csv_name))
-                            out_venue_rows = set()  # stores rows dicts converted to tuples in a single file (venues)
-                            out_ra_rows = set()  # stores rows dicts converted to tuples in a single file (resp_ags)
-                            with archive.open(csv_name, 'r') as csv_file, open(primary_ents_out_path, 'w', newline='',
-                                                                               encoding='utf-8') as primary_ents_out_file, open(
-                                venues_out_path, 'w', newline='', encoding='utf-8') as venues_out_file, open(
-                                resp_ags_out_path, 'w', newline='', encoding='utf-8') as resp_ags_out_file:
-                                primary_ents_writer = DictWriter(primary_ents_out_file, dialect='unix',
-                                                                 fieldnames=['omid', 'ids', 'type'])
-                                venues_writer = DictWriter(venues_out_file, dialect='unix', fieldnames=['omid', 'ids'])
-                                resp_ags_writer = DictWriter(resp_ags_out_file, dialect='unix',
-                                                             fieldnames=['omid', 'ids', 'ra_role'])
-                                primary_ents_writer.writeheader()
-                                venues_writer.writeheader()
-                                resp_ags_writer.writeheader()
-                                try:
-                                    reader = DictReader(TextIOWrapper(csv_file, encoding='utf-8'),
-                                                        dialect='unix')  # todo: cast into a list or leave it as generator?
-                                    for row in reader:
-                                        primary_entity_out_row: dict = get_entity_ids(row)
-                                        venue_out_row: dict = get_venue_ids(row)
-
-                                        # create a row for the resource uniquely identified by the OMID in the 'id' field
-                                        if primary_entity_out_row:
-                                            primary_ents_writer.writerow(
-                                                primary_entity_out_row)  # primary entities are unique -> write them directly to the output file
-
-                                        # create a row for the resource identified by the OMID in the 'venue' field
-                                        if venue_out_row:
-                                            out_venue_rows.add(tuple(venue_out_row.items()))
-
-                                        # create a row for each of the entities in the responsible agent fields ('author', 'publisher', 'editor' of the input row
-                                        for field in ['author', 'publisher', 'editor']:
-                                            for ra_out_row in get_ra_ids(row, field):
-                                                # todo: consider splitting authors, publishers, editors into separate tables
-                                                #  (and modifying the get_ra_ids function accordingly,
-                                                #  i.e. removing a then unnecessary 'ra_role' field in the output dictionary)
-
-                                                out_ra_rows.add(tuple(ra_out_row.items()))
-
-                                    venues_writer.writerows(map(dict,
-                                                                out_venue_rows))  # prevent duplicates inside the same file (not in the whole dataset)
-                                    # venues_writer.writerows([dict(t) for t in out_venue_rows]) # prevent duplicates inside the same file (not in the whole dataset)
-
-                                    resp_ags_writer.writerows(map(dict,
-                                                                  out_ra_rows))  # prevent duplicates inside the same file (not in the whole dataset)
-                                    # resp_ags_writer.writerows([dict(t) for t in out_ra_rows])  # prevent duplicates inside the same file (not in the whole dataset)
-
-                                    logging.info(f'Processing {csv_name} took {time.time() - file_start_time} seconds')
-                                except csv.Error as e:
-                                    logging.error(f'Error while processing {csv_name}: {e}')
-
-                        # logging.info(
-                        #     f'Processing input folder {inp_dir} for reduced OC Meta table creation took {time.time() - process_start_time} seconds')
-
-
-def map_omid_openalex_ids(inp_dir: str, db_path: str, out_dir: str, res_type_field=True) -> None:
-    """
-    Creates a mapping table between OMIDs and OpenAlex IDs.
-    :param inp_dir: path to the folder containing the reduced OC Meta tables
-    :param db_path: path to the database file
-    :param out_dir: path to the folder where the mapping table should be saved
-    :param res_type_field: if True, the mapping table will contain the type of the entity (use for IDs from the OC Meta
-        'id' field) otherwise it will not (use for IDs from the OC Meta 'venue' field)
-    :return: None
-    """
-    makedirs(out_dir, exist_ok=True)
-    with sql.connect(db_path) as conn:
-        cursor = conn.cursor()
-        for root, dirs, files in walk(inp_dir):
-            for file_name in tqdm(files):
-                with open(join(root, file_name), 'r', encoding='utf-8') as inp_file, open(join(out_dir, file_name), 'w',
-                                                                                          encoding='utf-8',
-                                                                                          newline='') as out_file:
-                    reader = DictReader(inp_file)
-                    if res_type_field:
-                        writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id', 'type'])
-                    else:
-                        writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id'])
-                    writer.writeheader()
-
-                    for row in reader:
-                        entity_ids: list = row['ids'].split()
-                        oa_ids = set()
-
-                        # if there is an ISSN for the entity in OC Meta, look only for ISSN in OpenAlex
-                        if any(x.startswith('issn:') for x in entity_ids):
-                            for pid in entity_ids:
-                                if pid.startswith('issn'):
-                                    query = "SELECT openalex_id FROM SourcesIssn WHERE supported_id=?"
-                                    cursor.execute(query, (pid,))
-                                    for res in cursor.fetchall():
-                                        oa_ids.add(res[0])
-                                else:
-                                    continue
-
-                        # if there is a DOI for the entity in OC Meta and no ISSNs, look only for DOI in OpenAlex
-                        elif any(x.startswith('doi:') for x in entity_ids):
-                            for pid in entity_ids:
-                                if pid.startswith('doi:'):
-                                    query = "SELECT openalex_id FROM WorksDoi WHERE supported_id=?"
-                                    cursor.execute(query, (pid,))
-                                    for res in cursor.fetchall():
-                                        oa_ids.add(res[0])
-                                else:
-                                    continue
-
-                        # if there is no ISSN nor DOI for the entity in OC Meta, look for all the other IDs in OpenAlex
-                        else:
-                            for pid in entity_ids:
-                                if pid.startswith('pmid:'):
-                                    curr_lookup_table = 'WorksPmid'
-                                elif pid.startswith('pmcid:'):
-                                    curr_lookup_table = 'WorksPmcid'
-                                elif pid.startswith('wikidata:'):
-                                    curr_lookup_table = 'SourcesWikidata'
-                                else:
-                                    # only PIDs for bibliographic resources supported by both OC Meta and OpenAlex are considered
-                                    continue
-                                query = "SELECT openalex_id FROM {} WHERE supported_id=?".format(curr_lookup_table)
-                                cursor.execute(query, (pid,))
-                                for res in cursor.fetchall():
-                                    oa_ids.add(res[0])
-
-                        if oa_ids:
-                            if res_type_field:
-                                out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids), 'type': row['type']}
-                            else:
-                                out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids)}
-                            writer.writerow(out_row)
-
-# if __name__ == '__main__':
-# META_INPUT_FOLDER_PATH = join('D:/oc_meta_dump')
-# META_OUTPUT_FOLDER_PATH = join('D:/reduced_meta_tables')
-# OA_WORK_INPUT_FOLDER_PATH = join('D:/openalex_dump/data/works')
-# OA_WORK_OUTPUT_FOLDER_PATH = join('D:/oa_work_tables')
-#
-# # preprocess_meta_tables(META_INPUT_FOLDER_PATH, META_OUTPUT_FOLDER_PATH, get_work_ids)
-# logging.basicConfig(filename=f'../logs/create_mapping_tables{(str(datetime.date(datetime.now())))}.log',
-#                     level=logging.INFO,
-#                     format='%(asctime)s - %(levelname)s - %(message)s')
-# create_openalex_ids_table(OA_WORK_INPUT_FOLDER_PATH, OA_WORK_OUTPUT_FOLDER_PATH, get_work_ids)
+# Process
+if __name__ == '__main__':
+    pass
