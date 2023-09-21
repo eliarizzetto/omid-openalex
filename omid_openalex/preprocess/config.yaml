@@ -1,58 +1,46 @@
 meta_config:
-  meta_inp_dir: '/path/to/meta_input_directory'
-  meta_ids_out_dir: '/path/to/meta_ids_output_directory'
+  meta_inp_dir: 'E:/meta_latest_dump/'
+  meta_ids_out_dir: 'E:/230920/meta_ids'
 
 openalex_works:
-  inp_dir: 'openalex_data'
-  out_dir: 'output_openalex_ids'
+  inp_dir: 'E:/openalex_dump_latest/data/sources'
+  out_dir: 'E:/230920/works_out'
   entity_type: 'work'
 openalex_sources:
-  inp_dir: 'openalex_data'
-  out_dir: 'output_openalex_ids'
+  inp_dir: 'E:/openalex_dump_latest/data/works'
+  out_dir: 'E:/230920/sources_out'
   entity_type: 'source'
 
 
-## If needed, add configs for creating the tables of other OpenAlex entity types (authors, funders, publishers, institutions).
+## If needed, add configs for creating the tables of other OpenAlex entity types (authors, funders, publishers, institutions) E.g.:.
 #openalex_authors:
-#    inp_dir: 'openalex_data/authors'
-#    out_dir: 'output_openalex_ids'
+#    inp_dir: 'openalex_input/data/authors'
+#    out_dir: 'output_openalex_ids/authors'
 #    entity_type: 'author'
-#openalex_funders:
-#    inp_dir: 'openalex_data/funders'
-#    out_dir: 'output_openalex_ids'
-#    entity_type: 'funder'
-#openalex_publishers:
-#    inp_dir: 'openalex_data/publishers'
-#    out_dir: 'output_openalex_ids'
-#    entity_type: 'publisher'
-#openalex_institutions:
-#    inp_dir: 'openalex_data/institutions'
-#    out_dir: 'output_openalex_ids'
-#    entity_type: 'institution'
 
 
 db_works_doi:
-  inp_dir: 'output_openalex_ids'
+  inp_dir: 'E:/230920/works_out'
   db_path: 'openalex.db'
   id_type: 'doi'
   entity_type: 'work'
 db_works_pmid:
-  inp_dir: 'output_openalex_ids'
+  inp_dir: 'E:/230920/works_out'
   db_path: 'openalex.db'
   id_type: 'pmid'
   entity_type: 'work'
 db_works_pmcid:
-    inp_dir: 'output_openalex_ids'
+    inp_dir: 'E:/230920/works_out'
     db_path: 'openalex.db'
     id_type: 'pmcid'
     entity_type: 'work'
 db_sources_issn:
-  inp_dir: 'output_openalex_ids'
+  inp_dir: 'E:/230920/sources_out'
   db_path: 'openalex.db'
   id_type: 'issn'
   entity_type: 'source'
 db_sources_wikidata:
-  inp_dir: 'output_openalex_ids'
+  inp_dir: 'E:/230920/sources_out'
   db_path: 'openalex.db'
   id_type: 'wikidata'
   entity_type: 'source'
@@ -65,7 +53,7 @@ db_sources_wikidata:
 #    entity_type: 'author'
 
 mapping:
-  inp_dir: 'input_data'
+  inp_dir: 'E:/230920/meta_ids/primary_ents'
   db_path: 'openalex.db'
-  out_dir: 'output_mapping'
+  out_dir: 'E:/230920/output_mapping'
   res_type_field: True

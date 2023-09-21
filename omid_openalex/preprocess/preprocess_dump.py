@@ -535,7 +535,7 @@ if __name__ == '__main__':
     openalex_processor = OpenAlexProcessor()
     mapping = Mapping()
 
-    # Call functions with CLI arguments and configuration
+    # Extract OMIDs, PIDs and types from meta tables ad make new tables
     meta_processor.preprocess_meta_tables()
 
     # Create CSV table for OpenAlex Work IDs
