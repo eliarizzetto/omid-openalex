@@ -14,11 +14,12 @@ from omid_openalex.preprocess.preprocess_dump import OpenAlexProcessor
 class TestOpenAlexProcessor(unittest.TestCase):
 
     def setUp(self):
+        self.CWD_ABS = os.path.dirname(os.path.abspath(__file__))
         self.openalex_processor = OpenAlexProcessor()
-        self.test_data_dir = join('openalex_processor', 'input_data')
-        self.expected_output_dir = join('openalex_processor', 'expected_output')
-        self.actual_output_dir = join('openalex_processor', 'actual_output')
-        # self.db_file = join(self.actual_output_dir, 'test_db.db')
+        self.test_data_dir = join(self.CWD_ABS, 'openalex_processor', 'input_data')
+        self.expected_output_dir = join(self.CWD_ABS, 'openalex_processor', 'expected_output')
+        self.actual_output_dir = join(self.CWD_ABS, 'openalex_processor', 'actual_output')
+        # self.db_file = join(self.CWD_ABS, self.actual_output_dir, 'test_db.db')
 
         self.works_inp_dir = join(self.test_data_dir, 'works')
         self.works_out_dir = join(self.actual_output_dir, 'ids_tables', 'works')

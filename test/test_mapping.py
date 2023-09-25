@@ -9,11 +9,11 @@ import csv
 class TestMapping(unittest.TestCase):
 
     def setUp(self):
-        # Define input and output directories
-        self.input_dir = "mapping/input_data"
+        self.CWD_ABS = os.path.dirname(os.path.abspath(__file__))
+        self.input_dir = join(self.CWD_ABS, "mapping", "input_data")
         self.db_path = join(self.input_dir, "test_db.db")
-        self.expected_output_dir = "mapping/expected_output"
-        self.actual_output_dir = "mapping/actual_output"  # Temporary output directory for testing
+        self.expected_output_dir = join(self.CWD_ABS, "mapping", "expected_output")
+        self.actual_output_dir = join(self.CWD_ABS, "mapping", "actual_output")  # Temporary output directory for testing
         self.process = Mapping()
 
     def test_mapping_with_res_type_field(self):
@@ -32,7 +32,6 @@ class TestMapping(unittest.TestCase):
                 actual_file = join(root, file_name)
                 expected_file = join(expected, file_name)
 
-                # self.assertTrue(filecmp.cmp(temp_file, expected_file, shallow=False))
                 with open(expected_file, 'r', encoding='utf-8') as expected, open(actual_file, 'r', encoding='utf-8') as actual:
                     expected_content = set(tuple(row) for row in csv.DictReader(expected))
                     actual_content = set(tuple(row) for row in csv.DictReader(actual))
