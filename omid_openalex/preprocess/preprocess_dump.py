@@ -17,9 +17,8 @@ import argparse
 
 
 class MetaProcessor:
-    def __init__(self, meta_inp_dir: str, meta_ids_out_dir: str):
-        self.meta_in: str = meta_inp_dir
-        self.meta_ids_out: str = meta_ids_out_dir
+    def __init__(self):
+        pass
 
     @staticmethod
     def get_entity_ids(row: dict) -> Union[dict, None]:
@@ -100,7 +99,7 @@ class MetaProcessor:
                         f'Error: {field} field of row {row} is not in the expected format. The entity corresponding to {ra_entity} is not processed.')
                     continue
 
-    def preprocess_meta_tables(self) -> None:
+    def preprocess_meta_tables(self, meta_in:str, meta_ids_out:str) -> None:
         """
         Preprocesses the OC Meta tables to create reduced tables with essential metadata. For each entity represented in a
         row in the original table, the reduced output table contains the OMID ('omid' field) and the PIDs ('ids' field) of
@@ -122,15 +121,15 @@ class MetaProcessor:
             :return: None (writes the reduced tables to disk)
         """
         csv.field_size_limit(131072 * 4)  # quadruple the default limit for csv field size
-        primary_ents_out_dir = join(self.meta_ids_out, 'primary_ents')
+        primary_ents_out_dir = join(meta_ids_out, 'primary_ents')
         makedirs(primary_ents_out_dir, exist_ok=True)
-        venues_out_dir = join(self.meta_ids_out, 'venues')
+        venues_out_dir = join(meta_ids_out, 'venues')
         makedirs(venues_out_dir, exist_ok=True)
-        resp_ags_out_dir = join(self.meta_ids_out, 'resp_ags')
+        resp_ags_out_dir = join(meta_ids_out, 'resp_ags')
         makedirs(resp_ags_out_dir, exist_ok=True)
-        logging.info(f'Processing input folder {self.meta_in} for reduced OC Meta table creation')
+        logging.info(f'Processing input folder {meta_in} for reduced OC Meta table creation')
         process_start_time = time.time()
-        for root, dirs, files in walk(self.meta_in):
+        for root, dirs, files in walk(meta_in):
             for file in files:
                 if file.endswith('.zip'):
                     archive_path = join(root, file)
@@ -225,67 +224,68 @@ class Mapping:
             cursor = conn.cursor()
             for root, dirs, files in walk(inp_dir):
                 for file_name in tqdm(files):
-                    with open(join(root, file_name), 'r', encoding='utf-8') as inp_file, open(join(out_dir, file_name),
-                                                                                              'w',
-                                                                                              encoding='utf-8',
-                                                                                              newline='') as out_file:
-                        reader = DictReader(inp_file)
-                        if res_type_field:
-                            writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id', 'type'])
-                        else:
-                            writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id'])
-                        writer.writeheader()
-
-                        for row in reader:
-                            entity_ids: list = row['ids'].split()
-                            oa_ids = set()
-
-                            # if there is an ISSN for the entity in OC Meta, look only for ISSN in OpenAlex
-                            if any(x.startswith('issn:') for x in entity_ids):
-                                for pid in entity_ids:
-                                    if pid.startswith('issn'):
-                                        query = "SELECT openalex_id FROM SourcesIssn WHERE supported_id=?"
-                                        cursor.execute(query, (pid,))
-                                        for res in cursor.fetchall():
-                                            oa_ids.add(res[0])
-                                    else:
-                                        continue
-
-                            # if there is a DOI for the entity in OC Meta and no ISSNs, look only for DOI in OpenAlex
-                            elif any(x.startswith('doi:') for x in entity_ids):
-                                for pid in entity_ids:
-                                    if pid.startswith('doi:'):
-                                        query = "SELECT openalex_id FROM WorksDoi WHERE supported_id=?"
-                                        cursor.execute(query, (pid,))
-                                        for res in cursor.fetchall():
-                                            oa_ids.add(res[0])
-                                    else:
-                                        continue
-
-                            # if there is no ISSN nor DOI for the entity in OC Meta, look for all the other IDs in OpenAlex
+                    if file_name.endswith('.csv'):
+                        with open(join(root, file_name), 'r', encoding='utf-8') as inp_file, open(join(out_dir, file_name),
+                                                                                                  'w',
+                                                                                                  encoding='utf-8',
+                                                                                                  newline='') as out_file:
+                            reader = DictReader(inp_file)
+                            if res_type_field:
+                                writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id', 'type'])
                             else:
-                                for pid in entity_ids:
-                                    if pid.startswith('pmid:'):
-                                        curr_lookup_table = 'WorksPmid'
-                                    elif pid.startswith('pmcid:'):
-                                        curr_lookup_table = 'WorksPmcid'
-                                    elif pid.startswith('wikidata:'):
-                                        curr_lookup_table = 'SourcesWikidata'
-                                    else:
-                                        # only PIDs for bibliographic resources supported by both OC Meta and OpenAlex are considered
-                                        continue
-                                    query = "SELECT openalex_id FROM {} WHERE supported_id=?".format(curr_lookup_table)
-                                    cursor.execute(query, (pid,))
-                                    for res in cursor.fetchall():
-                                        oa_ids.add(res[0])
+                                writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id'])
+                            writer.writeheader()
 
-                            if oa_ids:
-                                if res_type_field:
-                                    out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids),
-                                               'type': row['type']}
+                            for row in reader:
+                                entity_ids: list = row['ids'].split()
+                                oa_ids = set()
+
+                                # if there is an ISSN for the entity in OC Meta, look only for ISSN in OpenAlex
+                                if any(x.startswith('issn:') for x in entity_ids):
+                                    for pid in entity_ids:
+                                        if pid.startswith('issn'):
+                                            query = "SELECT openalex_id FROM SourcesIssn WHERE supported_id=?"
+                                            cursor.execute(query, (pid,))
+                                            for res in cursor.fetchall():
+                                                oa_ids.add(res[0])
+                                        else:
+                                            continue
+
+                                # if there is a DOI for the entity in OC Meta and no ISSNs, look only for DOI in OpenAlex
+                                elif any(x.startswith('doi:') for x in entity_ids):
+                                    for pid in entity_ids:
+                                        if pid.startswith('doi:'):
+                                            query = "SELECT openalex_id FROM WorksDoi WHERE supported_id=?"
+                                            cursor.execute(query, (pid,))
+                                            for res in cursor.fetchall():
+                                                oa_ids.add(res[0])
+                                        else:
+                                            continue
+
+                                # if there is no ISSN nor DOI for the entity in OC Meta, look for all the other IDs in OpenAlex
                                 else:
-                                    out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids)}
-                                writer.writerow(out_row)
+                                    for pid in entity_ids:
+                                        if pid.startswith('pmid:'):
+                                            curr_lookup_table = 'WorksPmid'
+                                        elif pid.startswith('pmcid:'):
+                                            curr_lookup_table = 'WorksPmcid'
+                                        elif pid.startswith('wikidata:'):
+                                            curr_lookup_table = 'SourcesWikidata'
+                                        else:
+                                            # only PIDs for bibliographic resources supported by both OC Meta and OpenAlex are considered
+                                            continue
+                                        query = "SELECT openalex_id FROM {} WHERE supported_id=?".format(curr_lookup_table)
+                                        cursor.execute(query, (pid,))
+                                        for res in cursor.fetchall():
+                                            oa_ids.add(res[0])
+
+                                if oa_ids:
+                                    if res_type_field:
+                                        out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids),
+                                                   'type': row['type']}
+                                    else:
+                                        out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids)}
+                                    writer.writerow(out_row)
 
 
 class OpenAlexProcessor:
@@ -508,6 +508,7 @@ class OpenAlexProcessor:
             print('Creating index...')
             create_idx_query = "CREATE INDEX idx_{} ON {}(supported_id);".format(table_name.lower(), table_name)
             cursor.execute(create_idx_query)
+            conn.commit()
 
         print(
             f"Creating and indexing the database table for {id_type.upper()}s took {(time.time() - start_time) / 60} minutes")
@@ -531,12 +532,12 @@ if __name__ == '__main__':
         settings = yaml.full_load(config_file)
 
     # Create instances of classes with configuration
-    meta_processor = MetaProcessor(**settings['meta_config'])
+    meta_processor = MetaProcessor()
     openalex_processor = OpenAlexProcessor()
     mapping = Mapping()
 
     # Extract OMIDs, PIDs and types from meta tables ad make new tables
-    meta_processor.preprocess_meta_tables()
+    meta_processor.preprocess_meta_tables(**settings['meta_config'])
 
     # Create CSV table for OpenAlex Work IDs
     openalex_processor.create_openalex_ids_table(**settings['openalex_works'])

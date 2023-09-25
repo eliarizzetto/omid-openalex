@@ -1,6 +1,6 @@
 meta_config:
-  meta_inp_dir: 'E:/meta_latest_dump/'
-  meta_ids_out_dir: 'E:/230920/meta_ids'
+  meta_in: 'E:/meta_latest_dump/'
+  meta_ids_out: 'E:/230920/meta_ids'
 
 openalex_works:
   inp_dir: 'E:/openalex_dump_latest/data/sources'
