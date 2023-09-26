@@ -1,4 +1,4 @@
-meta_config:
+meta_tables:
   meta_in: 'E:/meta_latest_dump/'
   meta_ids_out: 'E:/230920/meta_ids'
 

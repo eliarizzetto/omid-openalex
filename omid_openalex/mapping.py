@@ -4,7 +4,7 @@ import csv
 import json
 from io import TextIOWrapper
 from zipfile import ZipFile
-from typing import Generator, Literal, Union, List, Dict, Callable
+from typing import Generator, Literal, Union
 import logging
 import gzip
 import sqlite3 as sql
@@ -12,8 +12,6 @@ from csv import DictReader, DictWriter
 from tqdm import tqdm
 import time
 import pandas as pd
-import yaml
-import argparse
 
 
 class MetaProcessor:
@@ -94,7 +92,6 @@ class MetaProcessor:
                         output_row['ids'] = ' '.join(output_row['ids'])
                         yield output_row
                 except ValueError:
-                    # print(f'Error: {field} field of row {row} is not in the expected format. The entity corresponding to {ra_entity} is not processed.')
                     logging.error(
                         f'Error: {field} field of row {row} is not in the expected format. The entity corresponding to {ra_entity} is not processed.')
                     continue
@@ -195,18 +192,11 @@ class MetaProcessor:
                                     except csv.Error as e:
                                         logging.error(f'Error while processing {csv_name}: {e}')
 
-                            # logging.info(
-                            #     f'Processing input folder {inp_dir} for reduced OC Meta table creation took {time.time() - process_start_time} seconds')
 
 
 class Mapping:
     def __init__(self):
         pass
-        # with open(config, encoding='utf-8') as file:
-        #     settings = yaml.full_load(file)
-        # self.config = config
-        # self.mapping_in_dir: str = settings['mapping_in_dir']
-        # self.mapping_out_dir: str = settings['mapping_out_dir']
 
     @staticmethod
     def map_omid_openalex_ids(inp_dir: str, db_path: str, out_dir: str, res_type_field=True) -> None:
@@ -292,24 +282,9 @@ class OpenAlexProcessor:
 
     def __init__(self):
         pass
-        # with open(config, encoding='utf-8') as file:
-        #     settings = yaml.full_load(file)
-        # self.config = config
-        #
-        # self.openalex_works_in = settings['openalex_works_input_dir']
-        # self.openalex_sources_in = settings['openalex_sources_input_dir']
-        # self.openalex_authors_in = settings['openalex_authors_input_dir']
-        # self.openalex_publishers_in = settings['openalex_publishers_input_dir']
-        # self.openalex_institutions_in = settings['openalex_institutions_input_dir']
-        # self.openalex_funders_in = settings['openalex_funders_input_dir']
-        # self.openalex_ids = settings[
-        #     'openalex_ids']  # the dir where the ids extracted from openalex are stored in CSV files
-        # self.db_path: str = settings['db_path']
-        # self.entity_types_to_process: list = settings['entity_types_to_process']  # OpenAlex entity types to map
 
     @staticmethod
     def get_work_ids(inp_entity: dict) -> Generator[dict, None, None]:
-        output_row = dict()
         ids = set()
         openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
         for k, v in inp_entity['ids'].items():
@@ -353,7 +328,6 @@ class OpenAlexProcessor:
 
     @staticmethod
     def get_author_ids(inp_entity: dict) -> Generator[dict, None, None]:
-        output_row = dict()
         ids = set()
         openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
         for k, v in inp_entity['ids'].items():
@@ -366,7 +340,6 @@ class OpenAlexProcessor:
 
     @staticmethod
     def get_institution_ids(inp_entity: dict) -> Generator[dict, None, None]:
-        output_row = dict()
         ids = set()
         openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
         for k, v in inp_entity['ids'].items():
@@ -384,7 +357,6 @@ class OpenAlexProcessor:
 
     @staticmethod
     def get_publisher_ids(inp_entity: dict) -> Generator[dict, None, None]:
-        output_row = dict()
         ids = set()
         openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
         for k, v in inp_entity['ids'].items():
@@ -402,7 +374,6 @@ class OpenAlexProcessor:
 
     @staticmethod
     def get_funder_ids(inp_entity: dict) -> Generator[dict, None, None]:
-        output_row = dict()
         ids = set()
         openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
         for k, v in inp_entity['ids'].items():
@@ -420,7 +391,6 @@ class OpenAlexProcessor:
 
     def create_openalex_ids_table(self, inp_dir: str, out_dir: str, entity_type: Literal[
         'work', 'source', 'author', 'publisher', 'institution', 'funder']) -> None:
-        # Literal['work', 'source', 'author', 'publisher', 'institution', 'funder']
 
         if entity_type.lower().strip() == 'work':
             process_line = self.get_work_ids
@@ -434,7 +404,6 @@ class OpenAlexProcessor:
             process_line = self.get_institution_ids
         elif entity_type.lower().strip() == 'funder':
             process_line = self.get_funder_ids
-        # if needed, create and add functions for processing lines with other types of OA entities
         else:
             raise ValueError("ValueError: the entity type '{}' is not supported.".format(entity_type))
 
@@ -512,45 +481,4 @@ class OpenAlexProcessor:
 
         print(
             f"Creating and indexing the database table for {id_type.upper()}s took {(time.time() - start_time) / 60} minutes")
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Process and map OMID to OpenAlex IDs.')
-    parser.add_argument('--config', '-c', dest='config', type=str, default='config.yaml',
-                        help='Path to the YAML configuration file.')
-
-    # ## Add command line arguments for map_omid_openalex_ids
-    # parser.add_argument('-i', '--inp_dir', dest='inp_dir', type=str, help='Input directory for map_omid_openalex_ids')
-    # parser.add_argument('-db', '--db_path', dest='db_path', type=str, help='Database path for map_omid_openalex_ids')
-    # parser.add_argument('-o', '--out_dir', dest='out_dir', type=str, help='Output directory for map_omid_openalex_ids')
-    # parser.add_argument('-t', '--res_type_field', dest='res_type_field', type=bool, default=True, help='Whether to include the resource type field in the mapping tables')
-
-    args = parser.parse_args()
-
-    # Load configuration from the specified YAML file
-    with open(args.config, 'r', encoding='utf-8') as config_file:
-        settings = yaml.full_load(config_file)
-
-    # Create instances of classes with configuration
-    meta_processor = MetaProcessor()
-    openalex_processor = OpenAlexProcessor()
-    mapping = Mapping()
-
-    # Extract OMIDs, PIDs and types from meta tables ad make new tables
-    meta_processor.preprocess_meta_tables(**settings['meta_config'])
-
-    # Create CSV table for OpenAlex Work IDs
-    openalex_processor.create_openalex_ids_table(**settings['openalex_works'])
-    # Create CSV table for OpenAlex Source IDs
-    openalex_processor.create_openalex_ids_table(**settings['openalex_sources'])
-
-    # Create database tables for PIDs in OpenAlex
-    openalex_processor.create_id_db_table(**settings['db_works_doi'])
-    openalex_processor.create_id_db_table(**settings['db_works_pmid'])
-    openalex_processor.create_id_db_table(**settings['db_works_pmcid'])
-    openalex_processor.create_id_db_table(**settings['db_sources_issn'])
-    openalex_processor.create_id_db_table(**settings['db_sources_wikidata'])
-
-    # Map OMID to OpenAlex IDs
-    mapping.map_omid_openalex_ids(**settings['mapping'])
 

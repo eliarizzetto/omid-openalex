@@ -2,7 +2,7 @@ import unittest
 import os
 from os.path import join
 import shutil
-from omid_openalex.preprocess.preprocess_dump import MetaProcessor
+from omid_openalex.mapping import MetaProcessor
 import csv
 
 

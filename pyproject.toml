@@ -2,7 +2,7 @@
 name = "omid-openalex"
 version = "0.1.0"
 description = ""
-authors = ["Elia Rizzetto <elia.rizzetto@gmail.com>"]
+authors = ["Elia Rizzetto <elia.rizzetto@studio.unibo.it>"]
 readme = "README.md"
 packages = [{include = "omid_openalex"}]
 

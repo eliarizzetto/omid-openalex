@@ -16,7 +16,7 @@ trials
 
 # other
 *.db
-/omid_openalex/preprocess/prove.py
+/omid_openalex/omid_openalex/prove.py
 /prove/experiment.py
 graphs/
 iframe_figures/
@@ -24,10 +24,10 @@ iframe_figures/
 /omid_openalex/logs/
 */.ipynb_checkpoints/
 /analytics/multi_mapped_omids.csv
-/omid_openalex/preprocess/.ipynb_checkpoints/
+/omid_openalex/omid_openalex/.ipynb_checkpoints/
 /omid_openalex/process/new_mapping_main.py
 analytics/basic_stats.py
 /analytics/temp.py
 /analytics/multi_mapped_venues.csv
 /analytics/multi_mapped_primary_ents.csv
-/omid_openalex/preprocess/.ipynb_checkpoints/
+/omid_openalex/omid_openalex/.ipynb_checkpoints/
