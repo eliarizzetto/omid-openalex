@@ -1,7 +1,6 @@
 import unittest
 import os
 from os.path import join, exists
-import filecmp
 from omid_openalex.preprocess.preprocess_dump import Mapping
 import shutil
 import csv
@@ -22,11 +21,8 @@ class TestMapping(unittest.TestCase):
         actual = self.actual_output_dir
         expected = self.expected_output_dir
 
-        # creates the outout files in the (temporary) actual_output_dir
         self.process.map_omid_openalex_ids(data, db_path, actual, res_type_field=True)
 
-        # -------------------
-        # Compare the temporary output files with the expected output files
         for root, dirs, files in os.walk(actual):
             for file_name in files:
                 actual_file = join(root, file_name)
@@ -39,11 +35,11 @@ class TestMapping(unittest.TestCase):
                     self.assertEqual(expected_content, actual_content, f"File content mismatch: {expected_file} and {actual_file}")
 
     def tearDown(self):
-        # Clean up temporary output directory after each test
         actual_dir = self.actual_output_dir
         if exists(actual_dir):
-            shutil.rmtree(actual_dir)  # Remove the actual output directory
+            shutil.rmtree(actual_dir)
             print(f"Removed {actual_dir}")
+
 
 if __name__ == '__main__':
     unittest.main()
