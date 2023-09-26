@@ -90,7 +90,7 @@ class MetaProcessor:
                         f'Error: {field} field of row {row} is not in the expected format. The entity corresponding to {ra_entity} is not processed.')
                     continue
 
-    def preprocess_meta_tables(self, meta_in:str, meta_ids_out:str) -> None:
+    def preprocess_meta_tables(self, meta_in:str, meta_ids_out:str, all_rows:bool = True) -> None:
         """
         Preprocesses the OC Meta tables to create reduced tables with essential metadata. For each entity represented in a
         row in the original table, the reduced output table contains the OMID ('omid' field) and the PIDs ('ids' field) of
@@ -151,6 +151,11 @@ class MetaProcessor:
                                     try:
                                         reader = DictReader(TextIOWrapper(csv_file, encoding='utf-8'), dialect='unix')
                                         for row in reader:
+
+                                            # skip row if entity already has an openalex ID and all_rows == False
+                                            if any(pid.startswith('openalex:') for pid in row['id'].split()) and all_rows == False:
+                                                continue
+
                                             primary_entity_out_row: dict = self.get_entity_ids(row)
                                             venue_out_row: dict = self.get_venue_ids(row)
 
@@ -392,7 +397,7 @@ class Mapping:
         pass
 
     @staticmethod
-    def map_omid_openalex_ids(inp_dir: str, db_path: str, out_dir: str, res_type_field=True) -> None:
+    def map_omid_openalex_ids(inp_dir: str, db_path: str, out_dir: str, res_type_field=True, all_rows:bool=True) -> None:
         """
         Creates a mapping table between OMIDs and OpenAlex IDs.
         :param inp_dir: path to the folder containing the reduced OC Meta tables
@@ -422,6 +427,9 @@ class Mapping:
                             for row in reader:
                                 entity_ids: list = row['ids'].split()
                                 oa_ids = set()
+
+                                if any(x.startswith('openalex:') for x in entity_ids) and all_rows == False:
+                                    continue  # skip to next row
 
                                 # if there is an ISSN for the entity in OC Meta, look only for ISSN in OpenAlex
                                 if any(x.startswith('issn:') for x in entity_ids):

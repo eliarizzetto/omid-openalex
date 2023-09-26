@@ -60,6 +60,8 @@ class MetaProcessorTest(unittest.TestCase):
         self.assertFilesEqual(expected_venues_file, actual_venues_file)
         self.assertFilesEqual(expected_resp_ags_file, actual_resp_ags_file)
 
+    # todo: write test (and test data) for preprocess_meta_tables with process_all set to False
+
     def assertFilesEqual(self, expected_file, actual_file):
         with open(expected_file, 'r', encoding='utf-8') as expected, open(actual_file, 'r', encoding='utf-8') as actual:
             # convert output files to sets of tuples for comparing them (order of rows is slightly messed

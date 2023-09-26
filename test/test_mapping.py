@@ -34,6 +34,8 @@ class TestMapping(unittest.TestCase):
                     print(expected_file, actual_file)
                     self.assertEqual(expected_content, actual_content, f"File content mismatch: {expected_file} and {actual_file}")
 
+    # todo: write test (and test data) for mapping with process_all set to False
+
     def tearDown(self):
         actual_dir = self.actual_output_dir
         if exists(actual_dir):

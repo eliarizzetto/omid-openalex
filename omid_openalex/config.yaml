@@ -1,6 +1,7 @@
 meta_tables:
   meta_in: 'E:/meta_latest_dump/'
   meta_ids_out: 'E:/230920/meta_ids'
+  all_rows: True
 
 openalex_works:
   inp_dir: 'E:/openalex_dump_latest/data/sources'
@@ -57,3 +58,4 @@ mapping:
   db_path: 'openalex.db'
   out_dir: 'E:/230920/output_mapping'
   res_type_field: True
+  all_rows: True
