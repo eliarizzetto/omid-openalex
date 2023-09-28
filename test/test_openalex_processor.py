@@ -79,10 +79,14 @@ class TestOpenAlexProcessor(unittest.TestCase):
 
     def tearDown(self):
         actual_output_dir = self.actual_output_dir
+        actual_multi_mapped_dir = join(self.actual_output_dir, 'multi_mapped')
+
         if os.path.exists(actual_output_dir):
             shutil.rmtree(actual_output_dir)  # Remove the actual output directory
             print(f"Removed {actual_output_dir}")
-
+        if os.path.exists(actual_multi_mapped_dir):
+            shutil.rmtree(actual_multi_mapped_dir)
+            print(f"Removed {actual_multi_mapped_dir}")
 
 if __name__ == '__main__':
     unittest.main()
