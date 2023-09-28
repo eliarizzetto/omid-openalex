@@ -152,8 +152,8 @@ class MetaProcessor:
                                         reader = DictReader(TextIOWrapper(csv_file, encoding='utf-8'), dialect='unix')
                                         for row in reader:
 
-                                            # skip row if entity already has an openalex ID and all_rows == False
-                                            if any(pid.startswith('openalex:') for pid in row['id'].split()) and all_rows == False:
+                                            # skip row if entity already has an openalex ID and all_rows is False
+                                            if any(pid.startswith('openalex:') for pid in row['id'].split()) and all_rows is False:
                                                 continue
 
                                             primary_entity_out_row: dict = self.get_entity_ids(row)
@@ -397,18 +397,25 @@ class Mapping:
         pass
 
     @staticmethod
-    def map_omid_openalex_ids(inp_dir: str, db_path: str, out_dir: str, res_type_field=True, all_rows:bool=True) -> None:
+    def map_omid_openalex_ids(inp_dir:str, db_path:str, out_dir:str, multi_mapped_dir:str, type_field=True, all_rows=True) -> None:
         """
         Creates a mapping table between OMIDs and OpenAlex IDs.
         :param inp_dir: path to the folder containing the reduced OC Meta tables
         :param db_path: path to the database file
         :param out_dir: path to the folder where the mapping table should be saved
-        :param res_type_field: if True, the mapping table will contain the type of the entity (use for IDs from the OC Meta
+        :param type_field: if True, the mapping table will contain the type of the entity (use for IDs from the OC Meta
             'id' field) otherwise it will not (use for IDs from the OC Meta 'venue' field)
         :return: None
         """
+        makedirs(multi_mapped_dir, exist_ok=True)
         makedirs(out_dir, exist_ok=True)
-        with sql.connect(db_path) as conn:
+        multi_mapped_filepath = join(multi_mapped_dir, 'multi_mapped_omids.csv')
+        with sql.connect(db_path) as conn, open(multi_mapped_filepath, 'w', newline='') as multi_mapped:
+            if type_field:
+                multi_mapped_writer = DictWriter(multi_mapped, dialect='unix', fieldnames=['omid', 'openalex_id', 'type'])
+            else:
+                multi_mapped_writer = DictWriter(multi_mapped, dialect='unix', fieldnames=['omid', 'openalex_id'])
+            multi_mapped_writer.writeheader()
             cursor = conn.cursor()
             for root, dirs, files in walk(inp_dir):
                 for file_name in tqdm(files):
@@ -417,8 +424,10 @@ class Mapping:
                                                                                                   'w',
                                                                                                   encoding='utf-8',
                                                                                                   newline='') as out_file:
+
+
                             reader = DictReader(inp_file)
-                            if res_type_field:
+                            if type_field:
                                 writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id', 'type'])
                             else:
                                 writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id'])
@@ -428,7 +437,7 @@ class Mapping:
                                 entity_ids: list = row['ids'].split()
                                 oa_ids = set()
 
-                                if any(x.startswith('openalex:') for x in entity_ids) and all_rows == False:
+                                if any(x.startswith('openalex:') for x in entity_ids) and all_rows is False:
                                     continue  # skip to next row
 
                                 # if there is an ISSN for the entity in OC Meta, look only for ISSN in OpenAlex
@@ -471,10 +480,15 @@ class Mapping:
                                             oa_ids.add(res[0])
 
                                 if oa_ids:
-                                    if res_type_field:
+                                    if type_field:
                                         out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids),
                                                    'type': row['type']}
                                     else:
                                         out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids)}
-                                    writer.writerow(out_row)
 
+                                    if len(oa_ids) > 1:
+                                        # multi-mapped OMID
+                                        ...
+                                        multi_mapped_writer.writerow(out_row)
+                                    else:
+                                        writer.writerow(out_row)

@@ -66,8 +66,8 @@ class MetaProcessorTest(unittest.TestCase):
         with open(expected_file, 'r', encoding='utf-8') as expected, open(actual_file, 'r', encoding='utf-8') as actual:
             # convert output files to sets of tuples for comparing them (order of rows is slightly messed
             #   up in the output files, due to the fact that the function reads zipped files; the order doesnt matter).
-            expected_content = set(tuple(row) for row in csv.DictReader(expected))
-            actual_content = set(tuple(row) for row in csv.DictReader(actual))
+            expected_content = set(tuple(row.items()) for row in csv.DictReader(expected))
+            actual_content = set(tuple(row.items()) for row in csv.DictReader(actual))
             self.assertEqual(expected_content, actual_content,f"File content mismatch: {expected_file} and {actual_file}")
 
     def tearDown(self):

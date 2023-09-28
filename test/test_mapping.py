@@ -13,6 +13,8 @@ class TestMapping(unittest.TestCase):
         self.db_path = join(self.input_dir, "test_db.db")
         self.expected_output_dir = join(self.CWD_ABS, "mapping", "expected_output")
         self.actual_output_dir = join(self.CWD_ABS, "mapping", "actual_output")  # Temporary output directory for testing
+        self.expected_multi_mapped_dir = join(self.CWD_ABS, "mapping", "expected_multi_mapped")
+        self.actual_multi_mapped_dir = join(self.CWD_ABS, "mapping", "actual_multi_mapped_out")
         self.process = Mapping()
 
     def test_mapping_with_res_type_field(self):
@@ -20,8 +22,10 @@ class TestMapping(unittest.TestCase):
         db_path = self.db_path
         actual = self.actual_output_dir
         expected = self.expected_output_dir
+        actual_multi_mapped_dir = self.actual_multi_mapped_dir
+        expected_multi_mapped_dir = self.expected_multi_mapped_dir
 
-        self.process.map_omid_openalex_ids(data, db_path, actual, res_type_field=True)
+        self.process.map_omid_openalex_ids(data, db_path, actual, actual_multi_mapped_dir, type_field=True)
 
         for root, dirs, files in os.walk(actual):
             for file_name in files:
@@ -29,10 +33,19 @@ class TestMapping(unittest.TestCase):
                 expected_file = join(expected, file_name)
 
                 with open(expected_file, 'r', encoding='utf-8') as expected, open(actual_file, 'r', encoding='utf-8') as actual:
-                    expected_content = set(tuple(row) for row in csv.DictReader(expected))
-                    actual_content = set(tuple(row) for row in csv.DictReader(actual))
+                    expected_content = set(tuple(row.items()) for row in csv.DictReader(expected))
+                    actual_content = set(tuple(row.items()) for row in csv.DictReader(actual))
                     print(expected_file, actual_file)
                     self.assertEqual(expected_content, actual_content, f"File content mismatch: {expected_file} and {actual_file}")
+
+        for file in os.listdir(actual_multi_mapped_dir):
+            actual_file = join(actual_multi_mapped_dir, file)
+            expected_file = join(expected_multi_mapped_dir, file)
+
+            with open(expected_file, 'r', encoding='utf-8') as expected, open(actual_file, 'r', encoding='utf-8') as actual:
+                expected_content = set(i for row in csv.DictReader(expected) for v in row.values() for i in v.split())
+                actual_content = set(i for row in csv.DictReader(actual) for v in row.values() for i in v.split())
+                self.assertEqual(expected_content, actual_content, f"File content mismatch: {expected_file} and {actual_file}")
 
     # todo: write test (and test data) for mapping with process_all set to False
 
