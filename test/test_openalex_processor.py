@@ -24,7 +24,6 @@ class TestOpenAlexProcessor(unittest.TestCase):
 
         self.expected_out_file_works = join(self.expected_output_dir, 'works', 'updated_date_test', 'reduced_part_test.csv')
         self.expected_out_file_sources = join(self.expected_output_dir, 'sources', 'updated_date_test', 'reduced_part_test.csv')
-
         self.pids_to_search = ['doi:10.1109/ieeestd.2011.5712778', 'pmid:7936277', 'issn:2308-4898']
 
     def test_create_openalex_ids_table(self):
@@ -43,7 +42,6 @@ class TestOpenAlexProcessor(unittest.TestCase):
 
         self.assertFilesEqual(self.expected_out_file_works, works_output_file)
         self.assertFilesEqual(self.expected_out_file_sources, source_output_file)
-
     ## Can't test this method because the database file cannot be deleted after the test in tearDown(), or
     ##   else the database will not be accessible, for some reason.
     # def test_create_id_db_table(self):

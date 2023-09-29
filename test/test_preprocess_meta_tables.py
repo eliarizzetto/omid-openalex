@@ -14,8 +14,11 @@ class MetaProcessorTest(unittest.TestCase):
         self.meta_row2_no_type = {'id': 'omid:br/06070 issn:2703-1012 issn:2703-1004', 'title': 'Musik Und Klangkultur', 'author': '', 'issue': '', 'volume': '', 'venue': '', 'page': '', 'pub_date': '', 'type': '', 'publisher': '', 'editor': ''}
         self.meta_row3 = {'id': 'omid:br/06083 doi:10.4324/9781315372884 doi:10.1201/9781315372884 isbn:9781482244342 isbn:9781482244359', 'title': 'Super-Resolution Imaging In Biomedicine', 'author': '[omid:ar/0605548]; [omid:ar/0605550]; [omid:ar/0605549]', 'issue': '', 'volume': '', 'venue': 'Series In Cellular And Clinical Imaging [omid:br/060155 doi:10.1201/crcsercelcli issn:2372-3939]', 'page': '', 'pub_date': '2016-11-03', 'type': 'reference book', 'publisher': 'Informa Uk Limited [omid:ra/0610116005 crossref:301]', 'editor': 'Diaspro, Alberto [omid:ra/0603396]; Van Zandvoort, Marc A. M. J. [omid:ra/0603397]'}
         self.test_data_dir = join(self.CWD_ABS, 'preprocess_meta_tables', 'input_data')
+        self.test_data_dir_all_rows = join(self.CWD_ABS, 'preprocess_meta_tables', 'input_data_all_rows')
         self.expected_output_dir = join(self.CWD_ABS, 'preprocess_meta_tables', 'expected_output')
+        self.expected_output_all_rows_dir = join(self.CWD_ABS, 'preprocess_meta_tables', 'expected_output_all_rows')
         self.actual_output_dir = join(self.CWD_ABS, 'preprocess_meta_tables', 'actual_output')
+        self.actual_output_all_rows_dir = join(self.CWD_ABS, 'preprocess_meta_tables', 'actual_output_all_rows')
 
     def test_get_entity_ids(self):
         output = self.meta_processor.get_entity_ids(self.meta_row1)
@@ -51,16 +54,25 @@ class MetaProcessorTest(unittest.TestCase):
         actual_resp_ags_file = join(actual_output_dir, 'resp_ags', 'test.csv')
 
         # Perform assertions to check if the actual output files have been created at the intended path
-        self.assertTrue(os.path.exists(actual_primary_ents_file), "Expected primary entities file should exist")
-        self.assertTrue(os.path.exists(actual_venues_file), "Expected venues file should exist")
-        self.assertTrue(os.path.exists(actual_resp_ags_file), "Expected responsible agents file should exist")
+        self.assertTrue(os.path.exists(actual_primary_ents_file), "Actual primary entities file should exist")
+        self.assertTrue(os.path.exists(actual_venues_file), "Actual venues file should exist")
+        self.assertTrue(os.path.exists(actual_resp_ags_file), "Actual responsible agents file should exist")
 
         # # Compare the content of actual and expected output files
         self.assertFilesEqual(expected_primary_ents_file, actual_primary_ents_file)
         self.assertFilesEqual(expected_venues_file, actual_venues_file)
         self.assertFilesEqual(expected_resp_ags_file, actual_resp_ags_file)
 
-    # todo: write test (and test data) for preprocess_meta_tables with process_all set to False
+        # test preprocess_meta_tables with all_rows=True
+        inp_dir_all_rows = self.test_data_dir_all_rows
+        actual_out_dir_all_rows = self.actual_output_all_rows_dir
+        expected_out_dir_all_rows = self.expected_output_all_rows_dir
+
+        self.meta_processor.preprocess_meta_tables(inp_dir_all_rows, actual_out_dir_all_rows, all_rows=True)
+
+        all_rows_expected_file = join(expected_out_dir_all_rows, 'primary_ents', 'test_process_all.csv')
+        all_rows_actual_file = join(actual_out_dir_all_rows, 'primary_ents', 'test_process_all.csv')
+        self.assertFilesEqual(all_rows_expected_file, all_rows_actual_file)
 
     def assertFilesEqual(self, expected_file, actual_file):
         with open(expected_file, 'r', encoding='utf-8') as expected, open(actual_file, 'r', encoding='utf-8') as actual:
@@ -68,7 +80,7 @@ class MetaProcessorTest(unittest.TestCase):
             #   up in the output files, due to the fact that the function reads zipped files; the order doesnt matter).
             expected_content = set(tuple(row.items()) for row in csv.DictReader(expected))
             actual_content = set(tuple(row.items()) for row in csv.DictReader(actual))
-            self.assertEqual(expected_content, actual_content,f"File content mismatch: {expected_file} and {actual_file}")
+            self.assertEqual(expected_content, actual_content, f"File content mismatch: {expected_file} and {actual_file}")
 
     def tearDown(self):
         actual_output_dir = self.actual_output_dir
