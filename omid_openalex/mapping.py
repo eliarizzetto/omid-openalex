@@ -1,3 +1,18 @@
+#!python
+# Copyright (c) 2023 Elia Rizzetto <elia.rizzetto@studio.unibo.it>.
+#
+# Permission to use, copy, modify, and/or distribute this software for any purpose
+# with or without fee is hereby granted, provided that the above copyright notice
+# and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+# REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+# FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT,
+# OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
+# DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS
+# ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
+# SOFTWARE.
+
 from os.path import join, splitext, basename, isdir
 from os import listdir, makedirs, walk
 import csv
@@ -20,6 +35,12 @@ class MetaProcessor:
 
     @staticmethod
     def get_entity_ids(row: dict) -> Union[dict, None]:
+        """
+        Extracts the IDs in the value of the 'id' field from a row of the OC Meta dump.
+        :param row: a row of the OC Meta dump
+        :return: row with three fields: the OMID; a string with the PIDs of the entity in the 'id' field separated by
+        a single whitespace; and the type of resource. None if the entity in the 'id' field has no external PIDs.
+        """
         output_row = dict()
         output_row['omid'] = ''
         output_row['ids'] = []
@@ -39,8 +60,10 @@ class MetaProcessor:
     def get_venue_ids(row: dict) -> Union[dict, None]:
         """
         Extracts the IDs in the value of the 'venue' field from a row of the OC Meta dump.
-            :param row: dict representing a row of the OC Meta dump
-            :return: dict with the OMID and the PIDs of the entity in the venue field
+            :param row: a row of the OC Meta dump
+            :return: row with two fields: the OMID, and a string with the PIDs of the entity in the venue field
+            separated by a single whitespace. None if the entity in the venue field has no external IDs
+            supported by OpenAlex or is empty.
         """
         output_row = dict()
         output_row['omid'] = ''
@@ -63,6 +86,14 @@ class MetaProcessor:
 
     @staticmethod
     def get_ra_ids(row: dict, field: Literal['author', 'publisher', 'editor']) -> Generator[dict, None, None]:
+        """
+        Extracts the IDs in the value of the 'author', 'publisher', or 'editor' field from a row of the OC Meta dump.
+        :param row: a row of the OC Meta dump
+        :param field: the field of the row to be processed (one among 'author', 'publisher', 'editor')
+        :return: a generator of rows with three fields: the OMID, the PIDs of the entity in the field, and the role of
+        the entity in the field (one among 'author', 'publisher', 'editor'). None if the entity in the field has no
+        external IDs supported by OpenAlex or is empty.
+        """
         output_row = dict()
         if row[field]:
             if field == 'publisher':  # no separator in the publisher field -> only one entity!
@@ -100,14 +131,15 @@ class MetaProcessor:
         For each entity in the 'author', 'publisher', and 'editor' fields of a row in the original table, the reduced output
         table contains the OMID and the PIDs of the entity ('omid' and 'ids' fields), as well as the role of the entity
         ('ra_role' field, with the value being one of 'author', 'publisher', or 'editor').
-            :param inp_dir: the directory where the OC Meta tables are stored
-            :param out_dir: the directory where the reduced tables will be written, named with the same name as the original
-             but prefixed with:
+            :param all_rows: flag to indicate whether to process all rows or only those that do not already have an openalex ID
+            :param meta_in: the directory where the OC Meta input tables are stored
+            :param meta_ids_out: the directory where the reduced tables will be written in the form of multiple
+            CSV file. Each CSV file will be named as the file it was created from, but prefixed with:
                 * 'primary_ents_' if the table concerns the entity whose IDs are stored in the 'id' field of
                  the original table
-                * prefixed with 'venues_' if the table concerns the entity whose IDs are stored in the
+                * 'venues_' if the table concerns the entity whose IDs are stored in the
                  'venue' field of the original table
-                * prefixed with 'resp_ags_' if the table concerns the entities whose IDs are stored in the 'author', 'publisher',
+                * 'resp_ags_' if the table concerns the entities whose IDs are stored in the 'author', 'publisher',
                     or 'editor' fields of the original table
             :return: None (writes the reduced tables to disk)
         """
@@ -177,13 +209,9 @@ class MetaProcessor:
 
                                                     out_ra_rows.add(tuple(ra_out_row.items()))
 
-                                        venues_writer.writerows(map(dict,
-                                                                    out_venue_rows))  # prevent duplicates inside the same file (not in the whole dataset)
-                                        # venues_writer.writerows([dict(t) for t in out_venue_rows]) # prevent duplicates inside the same file (not in the whole dataset)
-
-                                        resp_ags_writer.writerows(map(dict,
-                                                                      out_ra_rows))  # prevent duplicates inside the same file (not in the whole dataset)
-                                        # resp_ags_writer.writerows([dict(t) for t in out_ra_rows])  # prevent duplicates inside the same file (not in the whole dataset)
+                                        # this prevents duplicates inside the same file (not in the whole dataset)
+                                        venues_writer.writerows(map(dict, out_venue_rows))
+                                        resp_ags_writer.writerows(map(dict, out_ra_rows))
 
                                         logging.info(
                                             f'Processing {csv_name} took {time.time() - file_start_time} seconds')
@@ -198,6 +226,13 @@ class OpenAlexProcessor:
 
     @staticmethod
     def get_work_ids(inp_entity: dict) -> Generator[dict, None, None]:
+        """
+        Extracts the IDs of an OpenAlex Work entity.
+        :param inp_entity: the dict object representing the OpenAlex Work entity
+        :return: a generator of dicts, as many as the external PIDs found for the resource, each with two fields:
+        one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
+        None if the entity has no external PIDs supported by OC Meta.
+        """
         ids = set()
         openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
         for k, v in inp_entity['ids'].items():
@@ -214,6 +249,13 @@ class OpenAlexProcessor:
 
     @staticmethod
     def get_source_ids(inp_entity: dict) -> Generator[dict, None, None]:
+        """
+        Extracts the IDs of an OpenAlex Source entity.
+        :param inp_entity: the dict object representing the OpenAlex Source entity
+        :return: a generator of dicts, as many as the external PIDs found for the resource, each with two fields:
+        one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
+        None if the entity has no external PIDs supported by OC Meta.
+        """
         ids = set()
         openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
         for k, v in inp_entity['ids'].items():
@@ -237,6 +279,13 @@ class OpenAlexProcessor:
 
     @staticmethod
     def get_author_ids(inp_entity: dict) -> Generator[dict, None, None]:
+        """
+        Extracts the IDs of an OpenAlex Author entity.
+        :param inp_entity: the dict object representing the OpenAlex Author entity
+        :return: a generator of dicts, as many as the external PIDs found for the resource, each with two fields:
+        one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
+        None if the entity has no external PIDs supported by OC Meta.
+        """
         ids = set()
         openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
         for k, v in inp_entity['ids'].items():
@@ -249,6 +298,13 @@ class OpenAlexProcessor:
 
     @staticmethod
     def get_institution_ids(inp_entity: dict) -> Generator[dict, None, None]:
+        """
+        Extracts the IDs of an OpenAlex Institution entity.
+        :param inp_entity: the dict object representing the OpenAlex Institution entity
+        :return: a generator of dicts, as many as the external PIDs found for the resource, each with two fields:
+        one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
+        None if the entity has no external PIDs supported by OC Meta.
+        """
         ids = set()
         openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
         for k, v in inp_entity['ids'].items():
@@ -266,6 +322,13 @@ class OpenAlexProcessor:
 
     @staticmethod
     def get_publisher_ids(inp_entity: dict) -> Generator[dict, None, None]:
+        """
+        Extracts the IDs of an OpenAlex Publisher entity.
+        :param inp_entity: the dict object representing the OpenAlex Publisher entity
+        :return: a generator of dicts, as many as the external PIDs found for the resource, each with two fields:
+        one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
+        None if the entity has no external PIDs supported by OC Meta.
+        """
         ids = set()
         openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
         for k, v in inp_entity['ids'].items():
@@ -283,6 +346,13 @@ class OpenAlexProcessor:
 
     @staticmethod
     def get_funder_ids(inp_entity: dict) -> Generator[dict, None, None]:
+        """
+        Extracts the IDs of an OpenAlex Funder entity.
+        :param inp_entity: the dict object representing the OpenAlex Funder entity
+        :return: a generator of dicts, as many as the external PIDs found for the resource, each with two fields:
+        one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
+        None if the entity has no external PIDs supported by OC Meta.
+        """
         ids = set()
         openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
         for k, v in inp_entity['ids'].items():
