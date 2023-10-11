@@ -84,9 +84,13 @@ class MetaProcessorTest(unittest.TestCase):
 
     def tearDown(self):
         actual_output_dir = self.actual_output_dir
+        actual_output_all_rows_dir = self.actual_output_all_rows_dir
         if os.path.exists(actual_output_dir):
             shutil.rmtree(actual_output_dir)
             print(f"Removed {actual_output_dir}")
+        if os.path.exists(actual_output_all_rows_dir):
+            shutil.rmtree(actual_output_all_rows_dir)
+            print(f"Removed {actual_output_all_rows_dir}")
 
 
 if __name__ == '__main__':
