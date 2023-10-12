@@ -33,3 +33,4 @@ analytics/basic_stats.py
 /analytics/multi_mapped_primary_ents.csv
 .idea/misc.xml
 /data/
+/.idea/
