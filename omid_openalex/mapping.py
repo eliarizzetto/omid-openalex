@@ -91,8 +91,8 @@ class MetaProcessor:
         :param row: a row of the OC Meta dump
         :param field: the field of the row to be processed (one among 'author', 'publisher', 'editor')
         :return: a generator of rows with three fields: the OMID, the PIDs of the entity in the field, and the role of
-        the entity in the field (one among 'author', 'publisher', 'editor'). None if the entity in the field has no
-        external IDs supported by OpenAlex or is empty.
+            the entity in the field (one among 'author', 'publisher', 'editor'). None if the entity in the field has no
+            external IDs supported by OpenAlex or is empty.
         """
         output_row = dict()
         if row[field]:
@@ -131,9 +131,9 @@ class MetaProcessor:
         For each entity in the 'author', 'publisher', and 'editor' fields of a row in the original table, the reduced output
         table contains the OMID and the PIDs of the entity ('omid' and 'ids' fields), as well as the role of the entity
         ('ra_role' field, with the value being one of 'author', 'publisher', or 'editor').
-            :param all_rows: flag to indicate whether to process all rows or only those that do not already have an openalex ID
-            :param meta_in: the directory where the OC Meta input tables are stored
-            :param meta_ids_out: the directory where the reduced tables will be written in the form of multiple
+        :param all_rows: flag to indicate whether to process all rows or only those that do not already have an openalex ID
+        :param meta_in: the directory where the OC Meta input tables are stored
+        :param meta_ids_out: the directory where the reduced tables will be written in the form of multiple
             CSV file. Each CSV file will be named as the file it was created from, but prefixed with:
                 * 'primary_ents_' if the table concerns the entity whose IDs are stored in the 'id' field of
                  the original table
@@ -141,7 +141,7 @@ class MetaProcessor:
                  'venue' field of the original table
                 * 'resp_ags_' if the table concerns the entities whose IDs are stored in the 'author', 'publisher',
                     or 'editor' fields of the original table
-            :return: None (writes the reduced tables to disk)
+        :return: None (writes the reduced tables to disk)
         """
         csv.field_size_limit(131072 * 4)  # quadruple the default limit for csv field size
         primary_ents_out_dir = join(meta_ids_out, 'primary_ents')
@@ -230,8 +230,8 @@ class OpenAlexProcessor:
         Extracts the IDs of an OpenAlex Work entity.
         :param inp_entity: the dict object representing the OpenAlex Work entity
         :return: a generator of dicts, as many as the external PIDs found for the resource, each with two fields:
-        one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
-        None if the entity has no external PIDs supported by OC Meta.
+            one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
+            None if the entity has no external PIDs supported by OC Meta.
         """
         ids = set()
         openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
@@ -253,8 +253,8 @@ class OpenAlexProcessor:
         Extracts the IDs of an OpenAlex Source entity.
         :param inp_entity: the dict object representing the OpenAlex Source entity
         :return: a generator of dicts, as many as the external PIDs found for the resource, each with two fields:
-        one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
-        None if the entity has no external PIDs supported by OC Meta.
+            one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
+            None if the entity has no external PIDs supported by OC Meta.
         """
         ids = set()
         openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
@@ -283,8 +283,8 @@ class OpenAlexProcessor:
         Extracts the IDs of an OpenAlex Author entity.
         :param inp_entity: the dict object representing the OpenAlex Author entity
         :return: a generator of dicts, as many as the external PIDs found for the resource, each with two fields:
-        one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
-        None if the entity has no external PIDs supported by OC Meta.
+            one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
+            None if the entity has no external PIDs supported by OC Meta.
         """
         ids = set()
         openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
@@ -302,8 +302,8 @@ class OpenAlexProcessor:
         Extracts the IDs of an OpenAlex Institution entity.
         :param inp_entity: the dict object representing the OpenAlex Institution entity
         :return: a generator of dicts, as many as the external PIDs found for the resource, each with two fields:
-        one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
-        None if the entity has no external PIDs supported by OC Meta.
+            one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
+            None if the entity has no external PIDs supported by OC Meta.
         """
         ids = set()
         openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
@@ -326,8 +326,8 @@ class OpenAlexProcessor:
         Extracts the IDs of an OpenAlex Publisher entity.
         :param inp_entity: the dict object representing the OpenAlex Publisher entity
         :return: a generator of dicts, as many as the external PIDs found for the resource, each with two fields:
-        one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
-        None if the entity has no external PIDs supported by OC Meta.
+            one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
+            None if the entity has no external PIDs supported by OC Meta.
         """
         ids = set()
         openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
@@ -350,8 +350,8 @@ class OpenAlexProcessor:
         Extracts the IDs of an OpenAlex Funder entity.
         :param inp_entity: the dict object representing the OpenAlex Funder entity
         :return: a generator of dicts, as many as the external PIDs found for the resource, each with two fields:
-        one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
-        None if the entity has no external PIDs supported by OC Meta.
+            one storing the external PID (one among the ones supported by OC Meta) and the other storing the OpenAlex ID.
+            None if the entity has no external PIDs supported by OC Meta.
         """
         ids = set()
         openalex_id = inp_entity['id'].removeprefix('https://openalex.org/')
@@ -370,6 +370,16 @@ class OpenAlexProcessor:
 
     def create_openalex_ids_table(self, inp_dir: str, out_dir: str, entity_type: Literal[
         'work', 'source', 'author', 'publisher', 'institution', 'funder']) -> None:
+        """
+        Creates a CSV table with the OpenAlex IDs for the specified entity type. Each row of the table contains the
+        OpenAlex ID and a string storing the external PIDs of the entity separated by a single whitespace. For entities
+        of type 'author', 'publisher', 'institution' and 'funder', the row also contains an additional field
+        specifying the role of the entity.
+        :param inp_dir: the directory where the OpenAlex dump is stored, in the form of compressed JSONL files
+        :param out_dir: the directory where the output tables will be written, in the form of CSV files
+        :param entity_type: the OpenAlex entity type
+        :return: None
+        """
 
         if entity_type.lower().strip() == 'work':
             process_line = self.get_work_ids
@@ -405,12 +415,17 @@ class OpenAlexProcessor:
                     writer = DictWriter(out_csv, dialect='unix', fieldnames=['supported_id', 'openalex_id'])
                     writer.writeheader()
                     for line in inp_jsonl:
-                        line = json.loads(line)
-                        out_rows = process_line(
-                            line)  # returns a generator of dicts, each corresponding to a row in the output csv
-                        if out_rows:
-                            for r in out_rows:
-                                writer.writerow(r)
+                        try:
+                            line = json.loads(line)
+                            out_rows = process_line(
+                                line)  # returns a generator of dicts, each corresponding to a row in the output csv
+                            if out_rows:
+                                for r in out_rows:
+                                    writer.writerow(r)
+                        except json.decoder.JSONDecodeError as e:
+                            logging.error(f'Error while processing {compressed_jsonl_name}: {e}')
+                            print(f'Error while processing {compressed_jsonl_name}: {e}')
+                            continue
                 logging.info(f'Processing {compressed_jsonl_name} took {time.time() - file_start_time} seconds')
         logging.info(
             f'Processing input folder {inp_dir} for OpenAlex table creation took {(time.time() - process_start_time) / 60} minutes')
@@ -420,16 +435,12 @@ class OpenAlexProcessor:
                            id_type: Literal['doi', 'pmid', 'pmcid', 'wikidata', 'issn'],
                            entity_type: Literal['work', 'source']) -> None:
         """
-        Creates and indexes a database table containing the IDs of the specified type for the specified entity type.
-        Creates a table (if it doesn't already exist) and names it with the name of the ID type passed as a parameter
-        (one among "doi", "pmid", "pmcid, etc."). Then, for each csv file in the input directory, the file is converted
-        to a pandas DataFrame and then appended to the database table. The DataFrames, each of which corresponds to
-        a single file,are appended one at a time.
-            :param inp_dir: the folder containing the csv files to be processed (the preliminary tables of the form: supported_id, openalex_id)
-            :param db_path: the path to the database file
-            :param id_type: the type of ID to be processed (one among "doi", "pmid", "pmcid", "wikidata", "issn")
-            :param entity_type:
-            :return:
+        Creates and indexes a database table containing the IDs of the specified ID scheme for the specified entity type.
+        :param inp_dir: the folder containing the csv files to be processed (the preliminary tables of the form: supported_id, openalex_id)
+        :param db_path: the path to the database file
+        :param id_type: the type of ID to be processed (one among "doi", "pmid", "pmcid", "wikidata", "issn")
+        :param entity_type: the type of OpenAlex entity to be processed (one among "work", "source")
+        :return: None
         """
 
         table_name = f'{entity_type.capitalize()}s{id_type.capitalize()}'
@@ -469,12 +480,16 @@ class Mapping:
     @staticmethod
     def map_omid_openalex_ids(inp_dir:str, db_path:str, out_dir:str, multi_mapped_dir:str, type_field=True, all_rows=True) -> None:
         """
-        Creates a mapping table between OMIDs and OpenAlex IDs.
+        Creates a mapping table between OMIDs and OpenAlex IDs. The entities in OC Meta that do not align to one single
+        entity in OpenAlex (multi-mapped OMIDs) are saved in a separate directory.
         :param inp_dir: path to the folder containing the reduced OC Meta tables
         :param db_path: path to the database file
         :param out_dir: path to the folder where the mapping table should be saved
+        :param multi_mapped_dir: path to the folder where to store the mapping tables of entities that do not align in a 1:1 ratio (multi-mapped OMIDs).
         :param type_field: if True, the mapping table will contain the type of the entity (use for IDs from the OC Meta
             'id' field) otherwise it will not (use for IDs from the OC Meta 'venue' field)
+        :param all_rows: bool flag to specify whether all entities should be processed (True) or only those that do not
+            already have an OpenAlex ID associated with them.
         :return: None
         """
         makedirs(multi_mapped_dir, exist_ok=True)
@@ -558,7 +573,6 @@ class Mapping:
 
                                     if len(oa_ids) > 1:
                                         # multi-mapped OMID
-                                        ...
                                         multi_mapped_writer.writerow(out_row)
                                     else:
                                         writer.writerow(out_row)
