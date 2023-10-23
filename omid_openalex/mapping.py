@@ -502,11 +502,10 @@ class Mapping:
             for root, dirs, files in walk(inp_dir):
                 for file_name in tqdm(files):
                     if file_name.endswith('.csv'):
-                        with open(join(root, file_name), 'r', encoding='utf-8') as inp_file, open(join(out_dir, file_name),
-                                                                                                  'w',
-                                                                                                  encoding='utf-8',
-                                                                                                  newline='') as out_file:
-
+                        with (
+                            open(join(root, file_name), 'r', encoding='utf-8') as inp_file,
+                            open(join(out_dir, file_name), 'w', encoding='utf-8', newline='') as out_file
+                        ):
 
                             reader = DictReader(inp_file)
                             if type_field:
