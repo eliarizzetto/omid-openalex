@@ -15,6 +15,9 @@ trials
 /omid_openalex/preprocess/*.log
 *.log
 
+# Docs
+docs/
+
 # other
 *.db
 /omid_openalex/omid_openalex/prove.py
@@ -34,3 +37,7 @@ analytics/basic_stats.py
 .idea/misc.xml
 /data/
 /.idea/
+/analytics/prova_provenance.py
+/analytics/provenance_analysis.ipynb
+/analytics/provenance.db
+analytics/__pycache__/__init__.cpython-39.pyc

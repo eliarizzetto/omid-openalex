@@ -143,7 +143,7 @@ class MetaProcessor:
                     or 'editor' fields of the original table
         :return: None (writes the reduced tables to disk)
         """
-        csv.field_size_limit(131072 * 4)  # quadruple the default limit for csv field size
+        csv.field_size_limit(131072 * 4)  # increase the default limit for csv field size
         primary_ents_out_dir = join(meta_ids_out, 'primary_ents')
         makedirs(primary_ents_out_dir, exist_ok=True)
         venues_out_dir = join(meta_ids_out, 'venues')
@@ -423,8 +423,8 @@ class OpenAlexProcessor:
                                 for r in out_rows:
                                     writer.writerow(r)
                         except json.decoder.JSONDecodeError as e:
-                            logging.error(f'Error while processing {compressed_jsonl_name}: {e}')
-                            print(f'Error while processing {compressed_jsonl_name}: {e}')
+                            logging.error(f'Error while processing {compressed_jsonl_name}: {e}.\n Critical entity: {line}')
+                            print(f'Error while processing {compressed_jsonl_name}: {e}.\n Critical entity: {line}')
                             continue
                 logging.info(f'Processing {compressed_jsonl_name} took {time.time() - file_start_time} seconds')
         logging.info(
