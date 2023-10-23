@@ -165,17 +165,16 @@ class MetaProcessor:
                             resp_ags_out_path = join(resp_ags_out_dir, basename(csv_name))
                             out_venue_rows = set()  # stores rows dicts converted to tuples in a single file (venues)
                             out_ra_rows = set()  # stores rows dicts converted to tuples in a single file (resp_ags)
-                            with archive.open(csv_name, 'r') as csv_file, open(primary_ents_out_path, 'w',
-                                                                               newline='',
-                                                                               encoding='utf-8') as primary_ents_out_file, open(
-                                venues_out_path, 'w', newline='', encoding='utf-8') as venues_out_file, open(
-                                resp_ags_out_path, 'w', newline='', encoding='utf-8') as resp_ags_out_file:
-                                primary_ents_writer = DictWriter(primary_ents_out_file, dialect='unix',
-                                                                 fieldnames=['omid', 'ids', 'type'])
-                                venues_writer = DictWriter(venues_out_file, dialect='unix',
-                                                           fieldnames=['omid', 'ids'])
-                                resp_ags_writer = DictWriter(resp_ags_out_file, dialect='unix',
-                                                             fieldnames=['omid', 'ids', 'ra_role'])
+                            with (
+                                archive.open(csv_name, 'r') as csv_file,
+                                open(primary_ents_out_path, 'w', newline='', encoding='utf-8') as primary_ents_out_file,
+                                open(venues_out_path, 'w', newline='', encoding='utf-8') as venues_out_file,
+                                open(resp_ags_out_path, 'w', newline='', encoding='utf-8') as resp_ags_out_file
+                            ):
+
+                                primary_ents_writer = DictWriter(primary_ents_out_file,dialect='unix',fieldnames=['omid', 'ids', 'type'])
+                                venues_writer = DictWriter(venues_out_file,dialect='unix',fieldnames=['omid', 'ids'])
+                                resp_ags_writer = DictWriter(resp_ags_out_file, dialect='unix',fieldnames=['omid', 'ids', 'ra_role'])
                                 primary_ents_writer.writeheader()
                                 venues_writer.writeheader()
                                 resp_ags_writer.writeheader()
@@ -192,8 +191,7 @@ class MetaProcessor:
 
                                         # create a row for the resource uniquely identified by the OMID in the 'id' field
                                         if primary_entity_out_row:
-                                            primary_ents_writer.writerow(
-                                                primary_entity_out_row)  # primary entities are unique -> write them directly to the output file
+                                            primary_ents_writer.writerow(primary_entity_out_row)  # primary entities are unique -> write them directly to the output file
 
                                         # create a row for the resource identified by the OMID in the 'venue' field
                                         if venue_out_row:
