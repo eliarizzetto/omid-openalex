@@ -58,5 +58,6 @@ mapping:
   db_path: 'openalex.db'
   out_dir: 'E:/230920/output_mapping'
   multi_mapped_dir: 'E:/230920/multi_mapped'
+  non_mapped_dir: 'E:/230920/non_mapped'
   res_type_field: True
   all_rows: True

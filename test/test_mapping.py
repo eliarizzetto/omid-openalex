@@ -31,6 +31,7 @@ class TestMapping(unittest.TestCase):
         self.actual_output_dir = join(self.CWD_ABS, "mapping", "actual_output")  # Temporary output directory for testing
         self.expected_multi_mapped_dir = join(self.CWD_ABS, "mapping", "expected_multi_mapped")
         self.actual_multi_mapped_dir = join(self.CWD_ABS, "mapping", "actual_multi_mapped_out")
+        self.actual_non_mapped_dir = join(self.CWD_ABS, "mapping", "actual_non_mapped_out")
         self.expected_dir_all_rows = join(self.CWD_ABS, "mapping", "expected_all_rows")
         self.actual_dir_all_rows = join(self.CWD_ABS, "mapping", "actual_all_rows")
         self.process = Mapping()
@@ -41,9 +42,10 @@ class TestMapping(unittest.TestCase):
         actual = self.actual_output_dir
         expected = self.expected_output_dir
         actual_multi_mapped_dir = self.actual_multi_mapped_dir
+        actual_non_mapped_dir = self.actual_non_mapped_dir
         expected_multi_mapped_dir = self.expected_multi_mapped_dir
 
-        self.process.map_omid_openalex_ids(data, db_path, actual, actual_multi_mapped_dir, type_field=True)
+        self.process.map_omid_openalex_ids(data, db_path, actual, actual_multi_mapped_dir, actual_non_mapped_dir, type_field=True)
 
         for root, dirs, files in os.walk(actual):
             for file_name in files:
@@ -68,8 +70,9 @@ class TestMapping(unittest.TestCase):
         actual = self.actual_dir_all_rows
         expected = self.expected_dir_all_rows
         actual_multi_mapped_dir = self.actual_multi_mapped_dir
+        actual_non_mapped_dir = self.actual_non_mapped_dir
 
-        self.process.map_omid_openalex_ids(data, db_path, actual, actual_multi_mapped_dir, type_field=True, all_rows=True)
+        self.process.map_omid_openalex_ids(data, db_path, actual, actual_multi_mapped_dir, actual_non_mapped_dir, type_field=True, all_rows=True)
 
         actual_out_file = join(actual, 'test_process_all.csv')
         expected = join(expected, 'test_process_all.csv')
