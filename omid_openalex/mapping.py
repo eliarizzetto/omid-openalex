@@ -462,7 +462,7 @@ class OpenAlexProcessor:
                         id_df.to_sql(table_name, conn, if_exists='append', index=False)
 
             print('Creating index...')
-            create_idx_query = "CREATE INDEX idx_{} ON {}(supported_id);".format(table_name.lower(), table_name)
+            create_idx_query = "CREATE INDEX IF NOT EXISTS idx_{} ON {}(supported_id);".format(table_name.lower(), table_name)
             cursor.execute(create_idx_query)
             conn.commit()
 
