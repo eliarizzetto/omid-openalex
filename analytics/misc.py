@@ -1,3 +1,4 @@
+import csv
 import sqlite3 as sql
 from tqdm import tqdm
 import logging
@@ -7,7 +8,10 @@ from zipfile import ZipFile
 from csv import DictReader, DictWriter
 from io import TextIOWrapper
 import json
+from collections import defaultdict
 import re
+from pprint import pprint
+
 
 URI_TYPE_DICT = {
     'http://purl.org/spar/doco/Abstract': 'abstract',
@@ -47,6 +51,7 @@ URI_TYPE_DICT = {
     'http://purl.org/spar/fabio/WebContent': 'web content'}
 
 def read_compressed_meta_dump(csv_dump_path:str):
+    csv.field_size_limit(131072 * 12)
     with ZipFile(csv_dump_path) as archive:
         for csv_file in tqdm(archive.namelist()):
             if csv_file.endswith('.csv'):
@@ -105,6 +110,7 @@ def write_extra_br_tables(br_rdf_path: str, omid_db_path: str, out_dir: str, max
     file_name = 0
     rows_written = 0
     current_file = None
+    csv.field_size_limit(131072 * 12)
 
     def open_new_file():
         nonlocal file_name, current_file
@@ -136,4 +142,75 @@ def write_extra_br_tables(br_rdf_path: str, omid_db_path: str, out_dir: str, max
 
     if current_file:
         current_file.close()
+
+# def read_output_tables(dir:str):
+#     """
+#     Reads the output CSV non-compressed tables and yields the rows.
+#     :param dir:
+#     :return:
+#     """
+#     for file in listdir(dir):
+#         if file.endswith('.csv'):
+#             with open(join(dir, file), 'r', encoding='utf-8') as f:
+#                 reader = DictReader(f, dialect='unix')
+#                 for row in reader:
+#                     yield row
+
+
+def read_output_tables(*dirs):
+    """
+    Reads the output CSV non-compressed tables from one or more directories and yields the rows.
+    :param dirs: One or more directories to read files from, provided as variable-length arguments.
+    :return: Yields rows from all CSV files in the specified directories.
+    """
+    for directory in dirs:
+        if isinstance(directory, str):
+            for file in listdir(directory):
+                if file.endswith('.csv'):
+                    with open(join(directory, file), 'r', encoding='utf-8') as f:
+                        reader = DictReader(f, dialect='unix')
+                        for row in reader:
+                            yield row
+        else:
+            raise ValueError("Each argument must be a string representing a directory path.")
+
+def analyse_provenance(db_path, *dirs):
+    res = defaultdict(lambda: defaultdict(int))
+    with sql.connect(db_path) as conn:
+        cur = conn.cursor()
+        query = 'SELECT source_uri FROM Provenance WHERE br_uri = ?'
+
+        for row in tqdm(read_output_tables(*dirs)):
+            br = row['omid'].replace('omid:', 'https://w3id.org/oc/meta/')
+            cur.execute(query, (br,))
+            query_res = cur.fetchone()
+            if query_res:
+                source = ' '.join(tuple(set(json.loads(query_res[0]))))
+                res[row['type']][source] +=1
+            else:
+                logging.info(f'No provenance information found for {row["omid"]}')
+
+    for k, v in res.items():
+        res[k] = dict(v)
+    return dict(res)
+
+
+
+if __name__ == '__main__':
+    csv.field_size_limit(131072 * 12)
+
+    # create omid db
+    omid_db_path = 'E:/omid.db'
+    # csv_dump_path = 'E:/meta_dump_june_23/meta_csv_dump_2023-06-28.zip'
+    # populate_omid_db(omid_db_path=omid_db_path, csv_dump_path=csv_dump_path)
+
+    # # Write tables of OMIDs that are not in the CSV (then count it)
+    # br_rdf_path = 'E:/br.zip'
+    # out_dir = 'E:/extra_br_tables'
+    # write_extra_br_tables(br_rdf_path=br_rdf_path, omid_db_path=omid_db_path, out_dir=out_dir, max_rows_per_file=10000)
+
+    # Analyse provenance counts
+    # logging.basicConfig(level=logging.INFO, filename='E:/provenance_analysis.log', filemode='w')
+    # pprint(analyse_provenance("E:/provenance.db", 'E:/extra_br_tables', 'E:/mapping_oct_23/non_mapped'))
+
 
