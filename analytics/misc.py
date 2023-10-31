@@ -127,7 +127,7 @@ def write_extra_br_tables(br_rdf_path: str, omid_db_path: str, out_dir: str, max
         cur = conn.cursor()
 
         for br in tqdm(get_br_data_from_rdf(br_rdf_path)):
-            lookup_omid = br['@id']
+            lookup_omid = br['@id'].replace('https://w3id.org/oc/meta/', 'omid:')
             cur.execute('SELECT omid FROM Omid WHERE omid=?', (lookup_omid,))
             res = cur.fetchone()
             if not res:
@@ -205,9 +205,9 @@ if __name__ == '__main__':
     # populate_omid_db(omid_db_path=omid_db_path, csv_dump_path=csv_dump_path)
 
     # # Write tables of OMIDs that are not in the CSV (then count it)
-    # br_rdf_path = 'E:/br.zip'
-    # out_dir = 'E:/extra_br_tables'
-    # write_extra_br_tables(br_rdf_path=br_rdf_path, omid_db_path=omid_db_path, out_dir=out_dir, max_rows_per_file=10000)
+    br_rdf_path = 'E:/br.zip'
+    out_dir = 'E:/extra_br_tables'
+    write_extra_br_tables(br_rdf_path=br_rdf_path, omid_db_path=omid_db_path, out_dir=out_dir, max_rows_per_file=10000)
 
     # Analyse provenance counts
     # logging.basicConfig(level=logging.INFO, filename='E:/provenance_analysis.log', filemode='w')
