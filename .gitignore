@@ -38,7 +38,9 @@ analytics/basic_stats.py
 /data/
 /.idea/
 /analytics/prova_provenance.py
-/analytics/provenance_analysis.ipynb
 /analytics/provenance.db
 analytics/__pycache__/__init__.cpython-39.pyc
 /analytics/provenance_20231030.py
+/analytics/intersection_venues_primary_ents.py
+/analytics/provenance_analysis.json
+/analytics/sorted_provenance_analysis.json

@@ -192,6 +192,7 @@ def analyse_provenance(db_path, *dirs):
 
     for k, v in res.items():
         res[k] = dict(v)
+    logging.info(f'Provenance analysis results: {dict(res)}')
     return dict(res)
 
 
@@ -200,17 +201,17 @@ if __name__ == '__main__':
     csv.field_size_limit(131072 * 12)
 
     # create omid db
-    omid_db_path = 'E:/omid.db'
+    # omid_db_path = 'E:/omid.db'
     # csv_dump_path = 'E:/meta_dump_june_23/meta_csv_dump_2023-06-28.zip'
     # populate_omid_db(omid_db_path=omid_db_path, csv_dump_path=csv_dump_path)
 
     # # Write tables of OMIDs that are not in the CSV (then count it)
-    br_rdf_path = 'E:/br.zip'
-    out_dir = 'E:/extra_br_tables'
-    write_extra_br_tables(br_rdf_path=br_rdf_path, omid_db_path=omid_db_path, out_dir=out_dir, max_rows_per_file=10000)
+    # br_rdf_path = 'E:/br.zip'
+    # out_dir = 'E:/extra_br_tables'
+    # write_extra_br_tables(br_rdf_path=br_rdf_path, omid_db_path=omid_db_path, out_dir=out_dir, max_rows_per_file=10000)
 
-    # Analyse provenance counts
-    # logging.basicConfig(level=logging.INFO, filename='E:/provenance_analysis.log', filemode='w')
-    # pprint(analyse_provenance("E:/provenance.db", 'E:/extra_br_tables', 'E:/mapping_oct_23/non_mapped'))
+    # # Analyse provenance counts
+    logging.basicConfig(level=logging.INFO, filename='E:/provenance_analysis_31oct.log', filemode='w')
+    pprint(analyse_provenance("E:/provenance.db", 'E:/extra_br_tables', 'E:/mapping_oct_23/non_mapped'))
 
 
