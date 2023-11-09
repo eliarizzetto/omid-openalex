@@ -44,3 +44,4 @@ analytics/__pycache__/__init__.cpython-39.pyc
 /analytics/intersection_venues_primary_ents.py
 /analytics/provenance_analysis.json
 /analytics/sorted_provenance_analysis.json
+/analytics/prove.py

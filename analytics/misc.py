@@ -60,18 +60,23 @@ def read_compressed_meta_dump(csv_dump_path:str):
                     for row in reader:
                         yield row
 
-def populate_omid_db(omid_db_path:str, csv_dump_path:str):
+def populate_omid_db(omid_db_path:str, meta_tables_csv:str):
+    """
+    Creates a flat-file database with only one table and one column: the OMID of the bibliographic resource (omid, str).
 
+    :param omid_db_path:
+    :param meta_tables_csv: the path to the folder storing the CSV files resulting from the pre-processing of the CSV Meta dump.
+    :return:
+    """
     with sql.connect(omid_db_path) as conn:
         cur = conn.cursor()
         cur.execute('DROP TABLE IF EXISTS omid')
         cur.execute('CREATE TABLE Omid (omid TEXT PRIMARY KEY)')
         conn.commit()
 
-        for row in tqdm(read_compressed_meta_dump(csv_dump_path)):
-            for pid in row['id'].split():
-                if pid.startswith('omid:'):
-                    cur.execute('INSERT INTO Omid VALUES (?)', (pid,))
+        for row in tqdm(read_output_tables(meta_tables_csv)):
+            curr_omid = row['omid']
+            cur.execute('INSERT INTO Omid VALUES (?)', (curr_omid,))
         conn.commit()
 
 
@@ -117,7 +122,7 @@ def write_extra_br_tables(br_rdf_path: str, omid_db_path: str, out_dir: str, max
         if current_file:
             current_file.close()
         current_file = open(join(out_dir, f'{file_name}.csv'), 'w', encoding='utf-8', newline='')
-        writer = DictWriter(current_file, fieldnames=['omid', 'type'])
+        writer = DictWriter(current_file, fieldnames=['omid', 'type', 'omid_only'], dialect='unix')
         writer.writeheader()
         return writer
 
@@ -132,6 +137,9 @@ def write_extra_br_tables(br_rdf_path: str, omid_db_path: str, out_dir: str, max
             res = cur.fetchone()
             if not res:
                 out_row = get_br_omid_and_type(br)
+                if not br.get('http://purl.org/spar/datacite/hasIdentifier'):
+                    out_row['omid_only'] = True
+
                 writer.writerow(out_row)
                 rows_written += 1
 
@@ -176,6 +184,7 @@ def read_output_tables(*dirs):
 
 def analyse_provenance(db_path, *dirs):
     res = defaultdict(lambda: defaultdict(int))
+    omid_only_distr = defaultdict((lambda :defaultdict(lambda: defaultdict(int))))
     with sql.connect(db_path) as conn:
         cur = conn.cursor()
         query = 'SELECT source_uri FROM Provenance WHERE br_uri = ?'
@@ -187,13 +196,26 @@ def analyse_provenance(db_path, *dirs):
             if query_res:
                 source = ' '.join(tuple(set(json.loads(query_res[0]))))
                 res[row['type']][source] +=1
+
+                if row.get('omid_only'):
+                # if no other ID than OMID, a value has been specified for this field, else it is empty or absent at all
+                    omid_only_distr[row['type']][source]['omid_only'] += 1
+                else:
+                    omid_only_distr[row['type']][source]['other_pids'] += 1
             else:
                 logging.info(f'No provenance information found for {row["omid"]}')
 
     for k, v in res.items():
         res[k] = dict(v)
+
+    for k, v in omid_only_distr.items():
+        omid_only_distr[k] = dict(v)
+        for k2, v2 in omid_only_distr[k].items():
+            omid_only_distr[k][k2] = dict(v2)
+
     logging.info(f'Provenance analysis results: {dict(res)}')
-    return dict(res)
+    logging.info(f'OMID-only resources count by type (these BRs have no other PIDs): {dict(omid_only_distr)}')
+    return dict(res), dict(omid_only_distr)
 
 
 
@@ -210,8 +232,8 @@ if __name__ == '__main__':
     # out_dir = 'E:/extra_br_tables'
     # write_extra_br_tables(br_rdf_path=br_rdf_path, omid_db_path=omid_db_path, out_dir=out_dir, max_rows_per_file=10000)
 
-    # # Analyse provenance counts
-    logging.basicConfig(level=logging.INFO, filename='E:/provenance_analysis_31oct.log', filemode='w')
-    pprint(analyse_provenance("E:/provenance.db", 'E:/extra_br_tables', 'E:/mapping_oct_23/non_mapped'))
+    # # # Analyse provenance counts
+    # logging.basicConfig(level=logging.INFO, filename='E:/provenance_analysis_31oct.log', filemode='w')
+    # pprint(analyse_provenance("E:/provenance.db", 'E:/extra_br_tables', 'E:/mapping_oct_23/non_mapped'))
 
 
