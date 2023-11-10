@@ -203,7 +203,7 @@ def analyse_provenance(db_path, *dirs):
                 else:
                     omid_only_distr[row['type']][source]['other_pids'] += 1
             else:
-                logging.info(f'No provenance information found for {row["omid"]}')
+                logging.warning(f'No provenance information found for {row["omid"]}')
 
     for k, v in res.items():
         res[k] = dict(v)

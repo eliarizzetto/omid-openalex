@@ -1,15 +1,15 @@
 meta_tables:
-  meta_in: 'E:/meta_latest_dump/'
-  meta_ids_out: 'E:/230920/meta_ids'
+  meta_dump_zip: '' # path to the OC Meta dump Zip file
+  meta_ids_out: 'meta_ids'
   all_rows: True
 
 openalex_works:
-  inp_dir: 'E:/openalex_dump_latest/data/sources'
-  out_dir: 'E:/230920/works_out'
+  inp_dir: 'openalex_dump/data/works'
+  out_dir: 'openalex_tables/works'
   entity_type: 'work'
 openalex_sources:
-  inp_dir: 'E:/openalex_dump_latest/data/works'
-  out_dir: 'E:/230920/sources_out'
+  inp_dir: 'openalex_dump/data/sources'
+  out_dir: 'openalex_tables/sources'
   entity_type: 'source'
 
 
@@ -21,27 +21,27 @@ openalex_sources:
 
 
 db_works_doi:
-  inp_dir: 'E:/230920/works_out'
+  inp_dir: 'openalex_tables/works'
   db_path: 'openalex.db'
   id_type: 'doi'
   entity_type: 'work'
 db_works_pmid:
-  inp_dir: 'E:/230920/works_out'
+  inp_dir: 'openalex_tables/works'
   db_path: 'openalex.db'
   id_type: 'pmid'
   entity_type: 'work'
 db_works_pmcid:
-    inp_dir: 'E:/230920/works_out'
+    inp_dir: 'openalex_tables/works'
     db_path: 'openalex.db'
     id_type: 'pmcid'
     entity_type: 'work'
 db_sources_issn:
-  inp_dir: 'E:/230920/sources_out'
+  inp_dir: 'openalex_tables/sources'
   db_path: 'openalex.db'
   id_type: 'issn'
   entity_type: 'source'
 db_sources_wikidata:
-  inp_dir: 'E:/230920/sources_out'
+  inp_dir: 'openalex_tables/sources'
   db_path: 'openalex.db'
   id_type: 'wikidata'
   entity_type: 'source'
@@ -54,10 +54,10 @@ db_sources_wikidata:
 #    entity_type: 'author'
 
 mapping:
-  inp_dir: 'E:/230920/meta_ids/primary_ents'
+  inp_dir: 'meta_ids/primary_ents'
   db_path: 'openalex.db'
-  out_dir: 'E:/230920/output_mapping'
-  multi_mapped_dir: 'E:/230920/multi_mapped'
-  non_mapped_dir: 'E:/230920/non_mapped'
+  out_dir: 'mapping_output/mapped'
+  multi_mapped_dir: 'mapping_output/multi_mapped'
+  non_mapped_dir: 'mapping_output/non_mapped'
   res_type_field: True
   all_rows: True

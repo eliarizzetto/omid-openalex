@@ -16,8 +16,10 @@
 from mapping import *
 import yaml
 import argparse
+import logging
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(message)s', filename='mapping.log', filemode='w')
     parser = argparse.ArgumentParser(description='Process and map OMID to OpenAlex IDs.')
     parser.add_argument('--config', '-c', dest='config', type=str, default='config.yaml',
                         help='Path to the YAML configuration file.')
