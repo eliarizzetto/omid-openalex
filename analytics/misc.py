@@ -2,8 +2,8 @@ import csv
 import sqlite3 as sql
 from tqdm import tqdm
 import logging
-from os import listdir, makedirs
-from os.path import join
+from os import listdir, makedirs, walk
+from os.path import join, isdir
 from zipfile import ZipFile
 from csv import DictReader, DictWriter
 from io import TextIOWrapper
@@ -11,6 +11,7 @@ import json
 from collections import defaultdict
 import re
 from pprint import pprint
+import gzip
 
 
 URI_TYPE_DICT = {
@@ -59,6 +60,23 @@ def read_compressed_meta_dump(csv_dump_path:str):
                     reader = DictReader(TextIOWrapper(f, encoding='utf-8'), dialect='unix')
                     for row in reader:
                         yield row
+
+def read_compressed_openalex_dump(in_dir:str):
+
+    logging.info(f'Processing input folder {in_dir} for OpenAlex table creation')
+    input_files = [join(root, file) for root, dirs, files in walk(in_dir) for file in files if file.endswith('.gz')]
+
+    for f in tqdm(input_files):
+        logging.info(f'Processing file {f}')
+        with gzip.open(f, 'r') as inp_jsonl:
+            for line in inp_jsonl:
+                try:
+                    line = json.loads(line)
+                    yield line
+                except json.decoder.JSONDecodeError as e:
+                    logging.error(f'Error while processing {f}: {e}.\n Critical entity: {line}')
+                    print(f'Error while processing {f}: {e}.\n Critical entity: {line}')
+                    continue
 
 def populate_omid_db(omid_db_path:str, meta_tables_csv:str):
     """

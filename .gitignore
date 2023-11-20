@@ -47,3 +47,4 @@ analytics/__pycache__/__init__.cpython-39.pyc
 /analytics/prove.py
 /analytics/provenance_analysis_results_11nov.json
 /analytics/provenance_analysis_results_11nov_id_info.json
+/analytics/multi_map_categories.py
