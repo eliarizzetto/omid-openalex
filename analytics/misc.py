@@ -53,33 +53,6 @@ URI_TYPE_DICT = {
     'http://purl.org/spar/fabio/SpecificationDocument': 'standard',
     'http://purl.org/spar/fabio/WebContent': 'web content'}
 
-def read_compressed_meta_dump(csv_dump_path:str):
-    csv.field_size_limit(131072 * 12)
-    with ZipFile(csv_dump_path) as archive:
-        for csv_file in tqdm(archive.namelist()):
-            if csv_file.endswith('.csv'):
-                logging.info(f'Processing file {csv_file}')
-                with archive.open(csv_file, 'r') as f:
-                    reader = DictReader(TextIOWrapper(f, encoding='utf-8'), dialect='unix')
-                    for row in reader:
-                        yield row
-
-def read_compressed_openalex_dump(in_dir:str):
-
-    logging.info(f'Processing input folder {in_dir} for OpenAlex table creation')
-    input_files = [join(root, file) for root, dirs, files in walk(in_dir) for file in files if file.endswith('.gz')]
-
-    for f in tqdm(input_files):
-        logging.info(f'Processing file {f}')
-        with gzip.open(f, 'r') as inp_jsonl:
-            for line in inp_jsonl:
-                try:
-                    line = json.loads(line)
-                    yield line
-                except json.decoder.JSONDecodeError as e:
-                    logging.error(f'Error while processing {f}: {e}.\n Critical entity: {line}')
-                    print(f'Error while processing {f}: {e}.\n Critical entity: {line}')
-                    continue
 
 def populate_omid_db(omid_db_path:str, meta_tables_csv:str):
     """

@@ -50,8 +50,8 @@ class TestOpenAlexProcessor(unittest.TestCase):
         processor.create_openalex_ids_table(self.sources_inp_dir, self.sources_out_dir, 'source')
 
         # Assert that the output CSV file has been created and contains expected data
-        works_output_file = join(self.works_out_dir, 'updated_date_test', 'reduced_part_test.csv')
-        source_output_file = join(self.sources_out_dir, 'updated_date_test', 'reduced_part_test.csv')
+        works_output_file = join(self.works_out_dir, '0.csv')
+        source_output_file = join(self.sources_out_dir, '0.csv')
         self.assertTrue(os.path.exists(works_output_file))
         self.assertTrue(os.path.exists(source_output_file))
 

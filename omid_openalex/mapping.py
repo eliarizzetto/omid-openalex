@@ -354,6 +354,24 @@ class OpenAlexProcessor:
                 output_row = {'supported_id': item, 'openalex_id': openalex_id}
                 yield output_row
 
+    @staticmethod
+    def read_compressed_openalex_dump(in_dir: str):
+
+        logging.info(f'Processing input folder {in_dir} for OpenAlex table creation')
+        input_files = [join(root, file) for root, dirs, files in walk(in_dir) for file in files if file.endswith('.gz')]
+
+        for f in tqdm(input_files):
+            logging.info(f'Processing file {f}')
+            with gzip.open(f, 'r') as inp_jsonl:
+                for line in inp_jsonl:
+                    try:
+                        line = json.loads(line)
+                        yield line
+                    except json.decoder.JSONDecodeError as e:
+                        logging.error(f'Error while processing {f}: {e}.\n Critical entity: {line}')
+                        print(f'Error while processing {f}: {e}.\n Critical entity: {line}')
+                        continue
+
     def create_openalex_ids_table(self, inp_dir: str, out_dir: str, entity_type: Literal[
         'work', 'source', 'author', 'publisher', 'institution', 'funder']) -> None:
         """
@@ -382,39 +400,12 @@ class OpenAlexProcessor:
         else:
             raise ValueError("ValueError: the entity type '{}' is not supported.".format(entity_type))
 
-        logging.info(f'Processing input folder {inp_dir} for OpenAlex table creation')
-        process_start_time = time.time()
-        inp_subdirs = [name for name in listdir(inp_dir) if isdir(join(inp_dir, name))]
-        for snapshot_folder_name in inp_subdirs:
-            logging.info(f'Processing snapshot directory {snapshot_folder_name}')
-            snapshot_folder_path = join(inp_dir, snapshot_folder_name)
-            for compressed_jsonl_name in tqdm(listdir(snapshot_folder_path)):
-                inp_path = join(snapshot_folder_path, compressed_jsonl_name)
-                logging.info(f'Processing {compressed_jsonl_name}')
-                file_start_time = time.time()
-                out_folder_path = join(out_dir, snapshot_folder_name)
-                makedirs(out_folder_path, exist_ok=True)
-                out_filename = 'reduced_' + splitext(basename(compressed_jsonl_name))[0] + '.csv'
-                out_filepath = join(out_folder_path, out_filename)
-                with gzip.open(inp_path, 'r') as inp_jsonl, open(out_filepath, 'w', newline='',
-                                                                 encoding='utf-8') as out_csv:
-                    writer = DictWriter(out_csv, dialect='unix', fieldnames=['supported_id', 'openalex_id'])
-                    writer.writeheader()
-                    for line in inp_jsonl:
-                        try:
-                            line = json.loads(line)
-                            out_rows = process_line(
-                                line)  # returns a generator of dicts, each corresponding to a row in the output csv
-                            if out_rows:
-                                for r in out_rows:
-                                    writer.writerow(r)
-                        except json.decoder.JSONDecodeError as e:
-                            logging.error(f'Error while processing {compressed_jsonl_name}: {e}.\n Critical entity: {line}')
-                            print(f'Error while processing {compressed_jsonl_name}: {e}.\n Critical entity: {line}')
-                            continue
-                logging.info(f'Processing {compressed_jsonl_name} took {time.time() - file_start_time} seconds')
-        logging.info(
-            f'Processing input folder {inp_dir} for OpenAlex table creation took {(time.time() - process_start_time) / 60} minutes')
+        makedirs(out_dir, exist_ok=True)
+
+        with MultiFileWriter(out_dir, fieldnames=['supported_id', 'openalex_id']) as writer:
+            for line in self.read_compressed_openalex_dump(inp_dir):
+                for r in process_line(line): # returns a generator of dicts, each corresponding to a row in the output csv
+                    writer.write_row(r)
 
     @staticmethod
     def create_id_db_table(inp_dir: str, db_path: str,
@@ -438,17 +429,13 @@ class OpenAlexProcessor:
             if cursor.fetchone():
                 raise ValueError(f"Table {table_name} already exists")
 
-            for root, dirs, files in walk(inp_dir):
-                for file in tqdm(files):
-                    if file.endswith('.csv'):
-                        csv_path = join(root, file)
-                        file_df = pd.read_csv(csv_path)  # Read the CSV file into a DataFrame
+            for file_df in read_csv_tables(inp_dir, use_pandas=True):
 
-                        # Select only the rows with the ID type specified as a parameter and create a new DataFrame
-                        id_df = file_df[file_df['supported_id'].str.startswith(id_type)]
+                # Select only the rows with the ID type specified as a parameter and create a new DataFrame
+                id_df = file_df[file_df['supported_id'].str.startswith(id_type)]
 
-                        # Append the DataFrame's rows to the existing table in the database
-                        id_df.to_sql(table_name, conn, if_exists='append', index=False)
+                # Append the DataFrame's rows to the existing table in the database
+                id_df.to_sql(table_name, conn, if_exists='append', index=False)
 
             print('Creating index...')
             create_idx_query = "CREATE INDEX IF NOT EXISTS idx_{} ON {}(supported_id);".format(table_name.lower(), table_name)

@@ -1,27 +1,36 @@
 import csv
 from os import makedirs, listdir
-from os.path import join
+from os.path import join, isdir
 from csv import DictWriter, DictReader
 from tqdm import tqdm
+import pandas as pd
 
-
-def read_csv_tables(*dirs):
+def read_csv_tables(*dirs, use_pandas=False):
     """
-    Reads the output CSV non-compressed tables from one or more directories and yields the rows.
+    Reads the output CSV non-compressed tables from one or more directories and yields either rows
+    as dictionaries (default) or entire pandas DataFrames, depending on the `use_pandas` parameter.
+
     :param dirs: One or more directories to read files from, provided as variable-length arguments.
-    :return: Yields rows from all CSV files in the specified directories.
+    :param use_pandas: Optional parameter specifying whether to use pandas DataFrame (default is False).
+    :return: Yields rows as dictionaries or entire pandas DataFrames from all CSV files in the specified directories.
     """
-    csv.field_size_limit(131072 * 12) # increase the default field size limit
+    csv.field_size_limit(131072 * 12)  # increase the default field size limit
     for directory in dirs:
-        if isinstance(directory, str):
+        if isdir(directory):
             files = [file for file in listdir(directory) if file.endswith('.csv')]
             for file in tqdm(files, desc=f"Processing {directory}", unit="file"):
-                with open(join(directory, file), 'r', encoding='utf-8') as f:
-                    reader = DictReader(f, dialect='unix')
-                    for row in reader:
-                        yield row
+                file_path = join(directory, file)
+                if use_pandas:
+                    df = pd.read_csv(file_path, encoding='utf-8')
+                    yield df
+                else:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        reader = csv.DictReader(f, dialect='unix')
+                        for row in reader:
+                            yield row
         else:
-            raise ValueError("Each argument must be a string representing a directory path.")
+            raise ValueError("Each argument must be a string representing the path to an existing directory.")
+
 
 class MultiFileWriter:
     def __init__(self, out_dir, fieldnames, nrows=10000, **kwargs):
