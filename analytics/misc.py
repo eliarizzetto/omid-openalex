@@ -12,6 +12,7 @@ from collections import defaultdict
 import re
 from pprint import pprint
 import gzip
+from typing import Union, Literal
 
 
 URI_TYPE_DICT = {
@@ -56,6 +57,7 @@ def read_compressed_meta_dump(csv_dump_path:str):
     with ZipFile(csv_dump_path) as archive:
         for csv_file in tqdm(archive.namelist()):
             if csv_file.endswith('.csv'):
+                logging.info(f'Processing file {csv_file}')
                 with archive.open(csv_file, 'r') as f:
                     reader = DictReader(TextIOWrapper(f, encoding='utf-8'), dialect='unix')
                     for row in reader:
@@ -235,7 +237,47 @@ def analyse_provenance(db_path, *dirs):
     logging.info(f'OMID-only resources count by type (these BRs have no other PIDs): {dict(omid_only_distr)}')
     return dict(res), dict(omid_only_distr)
 
+class MultiFileWriter:
+    def __init__(self, out_dir, nrows=10000, **kwargs):
+        self.out_dir = out_dir
+        self.max_rows_per_file = nrows  # maximum number of rows per file
+        self.file_name = 0
+        self.rows_written = 0
+        self.current_file = None
+        self.kwargs = kwargs
+        makedirs(out_dir, exist_ok=True)
 
+    def __enter__(self):
+        self._open_new_file()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
+    def _open_new_file(self):
+        if self.current_file:
+            self.current_file.close()
+        file_extension = self.kwargs.get('file_extension', 'csv')
+        file_path = join(self.out_dir, f'{self.file_name}.{file_extension}')
+        encoding = self.kwargs.get('encoding', 'utf-8')
+        self.current_file = open(file_path, 'w', encoding=encoding, newline='')
+        fieldnames = self.kwargs.get('fieldnames', None)
+        dialect = self.kwargs.get('dialect', 'unix')
+        self.writer = DictWriter(self.current_file, fieldnames=fieldnames, dialect=dialect)
+        if fieldnames is not None:
+            self.writer.writeheader()
+
+    def write_row(self, row):
+        self.writer.writerow(row)
+        self.rows_written += 1
+        if self.rows_written >= self.max_rows_per_file:
+            self.file_name += 1
+            self.rows_written = 0
+            self._open_new_file()
+
+    def close(self):
+        if self.current_file:
+            self.current_file.close()
 
 if __name__ == '__main__':
     csv.field_size_limit(131072 * 12)
