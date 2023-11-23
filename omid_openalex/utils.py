@@ -33,6 +33,29 @@ def read_csv_tables(*dirs, use_pandas=False):
 
 
 class MultiFileWriter:
+    """
+    A context manager for writing rows to CSV files with automatic file splitting.
+
+    :param out_dir: The directory for storing CSV files.
+    :param fieldnames: Field names for the CSV file.
+    :type fieldnames: List[str]
+    :param max_rows_per_file: Max rows before creating a new file (default: 10,000).
+    :type max_rows_per_file: int, optional
+    :param file_extension: File extension for the CSV files (default: 'csv').
+    :type file_extension: str, optional
+    :param encoding: Encoding for writing CSV files (default: 'utf-8').
+    :type encoding: str, optional
+    :param dialect: CSV dialect to use (default: 'unix').
+    :type dialect: str, optional
+
+    Example::
+
+        fieldnames = ['omid', 'type', 'omid_only']
+        with FileWriter('output_data', fieldnames, max_rows_per_file=5000, file_extension='csv') as file_writer:
+            for data_row in dataset:
+                processed_row = process_data(data_row)
+                file_writer.write_row(processed_row)
+    """
     def __init__(self, out_dir, fieldnames, nrows=10000, **kwargs):
         self.out_dir = out_dir
         self.fieldnames = fieldnames

@@ -47,12 +47,11 @@ class TestMapping(unittest.TestCase):
 
         self.process.map_omid_openalex_ids(data, db_path, actual, actual_multi_mapped_dir, actual_non_mapped_dir, type_field=True)
 
-        for root, dirs, files in os.walk(actual):
-            for file_name in files:
-                actual_file = join(root, file_name)
-                expected_file = join(expected, file_name)
 
-                self.assertFilesEqual(expected_file, actual_file)
+        actual_file = join(actual, '0.csv')
+        expected_file = join(expected, 'test.csv')
+
+        self.assertFilesEqual(expected_file, actual_file)
 
         for file in os.listdir(actual_multi_mapped_dir):
             actual_file = join(actual_multi_mapped_dir, file)
@@ -74,7 +73,7 @@ class TestMapping(unittest.TestCase):
 
         self.process.map_omid_openalex_ids(data, db_path, actual, actual_multi_mapped_dir, actual_non_mapped_dir, type_field=True, all_rows=True)
 
-        actual_out_file = join(actual, 'test_process_all.csv')
+        actual_out_file = join(actual, '0.csv')
         expected = join(expected, 'test_process_all.csv')
 
         self.assertFilesEqual(expected, actual_out_file)

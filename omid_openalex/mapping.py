@@ -26,7 +26,6 @@ import sqlite3 as sql
 from csv import DictReader, DictWriter
 from tqdm import tqdm
 import time
-import pandas as pd
 from omid_openalex.utils import read_csv_tables, MultiFileWriter
 
 
@@ -470,91 +469,82 @@ class Mapping:
         makedirs(out_dir, exist_ok=True)
         makedirs(non_mapped_dir, exist_ok=True)
         multi_mapped_filepath = join(multi_mapped_dir, 'multi_mapped_omids.csv')
-        with sql.connect(db_path) as conn, open(multi_mapped_filepath, 'w', newline='') as multi_mapped:
-            if type_field:
-                multi_mapped_writer = DictWriter(multi_mapped, dialect='unix', fieldnames=['omid', 'openalex_id', 'type'])
-            else:
-                multi_mapped_writer = DictWriter(multi_mapped, dialect='unix', fieldnames=['omid', 'openalex_id'])
-            multi_mapped_writer.writeheader()
+
+        multi_mapped_fieldnames = ['omid', 'openalex_id', 'type'] if type_field else ['omid', 'openalex_id']
+        non_mappped_fieldnames = ['omid', 'type'] if type_field else ['omid']
+        aligned_fieldnames = ['omid', 'openalex_id', 'type'] if type_field else ['omid', 'openalex_id']
+
+        with (
+            sql.connect(db_path) as conn,
+            open(multi_mapped_filepath, 'w', newline='') as multi_mapped,
+            MultiFileWriter(non_mapped_dir, fieldnames=non_mappped_fieldnames) as non_mapped_writer,
+            MultiFileWriter(out_dir, fieldnames=aligned_fieldnames) as writer
+        ):
+
             cursor = conn.cursor()
-            for file_name in tqdm(listdir(inp_dir)):
-                if file_name.endswith('.csv'):
-                    with (
-                        open(join(inp_dir, file_name), 'r', encoding='utf-8') as inp_file,
-                        open(join(out_dir, file_name), 'w', encoding='utf-8', newline='') as out_file,
-                        open(join(non_mapped_dir, file_name), 'w', encoding='utf-8', newline='') as non_mapped_file
-                    ):
+            multi_mapped_writer = DictWriter(multi_mapped, dialect='unix', fieldnames=multi_mapped_fieldnames)
+            multi_mapped_writer.writeheader()
 
-                        reader = DictReader(inp_file)
-                        if type_field:
-                            writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id', 'type'])
-                            non_mapped_writer = DictWriter(non_mapped_file, dialect='unix', fieldnames=['omid', 'type'])
+            for row in read_csv_tables(inp_dir):
+                entity_ids: list = row['ids'].split()
+                oa_ids = set()
+
+                if any(x.startswith('openalex:') for x in entity_ids) and all_rows is False:
+                    continue  # skip to next row
+
+                # if there is an ISSN for the entity in OC Meta, look only for ISSN in OpenAlex
+                if any(x.startswith('issn:') for x in entity_ids):
+                    for pid in entity_ids:
+                        if pid.startswith('issn'):
+                            query = "SELECT openalex_id FROM SourcesIssn WHERE supported_id=?"
+                            cursor.execute(query, (pid,))
+                            for res in cursor.fetchall():
+                                oa_ids.add(res[0])
                         else:
-                            writer = DictWriter(out_file, dialect='unix', fieldnames=['omid', 'openalex_id'])
-                            non_mapped_writer = DictWriter(non_mapped_file, dialect='unix', fieldnames=['omid'])
-                        writer.writeheader()
-                        non_mapped_writer.writeheader()
+                            continue
 
-                        for row in reader:
-                            entity_ids: list = row['ids'].split()
-                            oa_ids = set()
+                # if there is a DOI for the entity in OC Meta and no ISSNs, look only for DOI in OpenAlex
+                elif any(x.startswith('doi:') for x in entity_ids):
+                    for pid in entity_ids:
+                        if pid.startswith('doi:'):
+                            query = "SELECT openalex_id FROM WorksDoi WHERE supported_id=?"
+                            cursor.execute(query, (pid,))
+                            for res in cursor.fetchall():
+                                oa_ids.add(res[0])
+                        else:
+                            continue
 
-                            if any(x.startswith('openalex:') for x in entity_ids) and all_rows is False:
-                                continue  # skip to next row
+                # if there is no ISSN nor DOI for the entity in OC Meta, look for all the other IDs in OpenAlex
+                else:
+                    for pid in entity_ids:
+                        if pid.startswith('pmid:'):
+                            curr_lookup_table = 'WorksPmid'
+                        elif pid.startswith('pmcid:'):
+                            curr_lookup_table = 'WorksPmcid'
+                        elif pid.startswith('wikidata:'):
+                            curr_lookup_table = 'SourcesWikidata'
+                        else:
+                            # only PIDs for bibliographic resources supported by both OC Meta and OpenAlex are considered
+                            continue
+                        query = "SELECT openalex_id FROM {} WHERE supported_id=?".format(curr_lookup_table)
+                        cursor.execute(query, (pid,))
+                        for res in cursor.fetchall():
+                            oa_ids.add(res[0])
 
-                            # if there is an ISSN for the entity in OC Meta, look only for ISSN in OpenAlex
-                            if any(x.startswith('issn:') for x in entity_ids):
-                                for pid in entity_ids:
-                                    if pid.startswith('issn'):
-                                        query = "SELECT openalex_id FROM SourcesIssn WHERE supported_id=?"
-                                        cursor.execute(query, (pid,))
-                                        for res in cursor.fetchall():
-                                            oa_ids.add(res[0])
-                                    else:
-                                        continue
+                if oa_ids:
+                    if type_field:
+                        out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids),
+                                   'type': row['type']}
+                    else:
+                        out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids)}
 
-                            # if there is a DOI for the entity in OC Meta and no ISSNs, look only for DOI in OpenAlex
-                            elif any(x.startswith('doi:') for x in entity_ids):
-                                for pid in entity_ids:
-                                    if pid.startswith('doi:'):
-                                        query = "SELECT openalex_id FROM WorksDoi WHERE supported_id=?"
-                                        cursor.execute(query, (pid,))
-                                        for res in cursor.fetchall():
-                                            oa_ids.add(res[0])
-                                    else:
-                                        continue
-
-                            # if there is no ISSN nor DOI for the entity in OC Meta, look for all the other IDs in OpenAlex
-                            else:
-                                for pid in entity_ids:
-                                    if pid.startswith('pmid:'):
-                                        curr_lookup_table = 'WorksPmid'
-                                    elif pid.startswith('pmcid:'):
-                                        curr_lookup_table = 'WorksPmcid'
-                                    elif pid.startswith('wikidata:'):
-                                        curr_lookup_table = 'SourcesWikidata'
-                                    else:
-                                        # only PIDs for bibliographic resources supported by both OC Meta and OpenAlex are considered
-                                        continue
-                                    query = "SELECT openalex_id FROM {} WHERE supported_id=?".format(curr_lookup_table)
-                                    cursor.execute(query, (pid,))
-                                    for res in cursor.fetchall():
-                                        oa_ids.add(res[0])
-
-                            if oa_ids:
-                                if type_field:
-                                    out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids),
-                                               'type': row['type']}
-                                else:
-                                    out_row = {'omid': row['omid'], 'openalex_id': ' '.join(oa_ids)}
-
-                                if len(oa_ids) > 1:
-                                    # multi-mapped OMID
-                                    multi_mapped_writer.writerow(out_row)
-                                else:
-                                    writer.writerow(out_row)
-                            else:
-                                if type_field:
-                                    non_mapped_writer.writerow({'omid': row['omid'], 'type': row['type']})
-                                else:
-                                    non_mapped_writer.writerow({'omid': row['omid']})
+                    if len(oa_ids) > 1:
+                        # multi-mapped OMID
+                        multi_mapped_writer.writerow(out_row)
+                    else:
+                        writer.write_row(out_row)
+                else:
+                    if type_field:
+                        non_mapped_writer.write_row({'omid': row['omid'], 'type': row['type']})
+                    else:
+                        non_mapped_writer.write_row({'omid': row['omid']})
