@@ -24,8 +24,9 @@ def read_csv_tables(*dirs):
             raise ValueError("Each argument must be a string representing a directory path.")
 
 class MultiFileWriter:
-    def __init__(self, out_dir, nrows=10000, **kwargs):
+    def __init__(self, out_dir, fieldnames, nrows=10000, **kwargs):
         self.out_dir = out_dir
+        self.fieldnames = fieldnames
         self.max_rows_per_file = nrows  # maximum number of rows per file
         self.file_name = 0
         self.rows_written = 0
@@ -48,11 +49,9 @@ class MultiFileWriter:
         file_path = join(self.out_dir, f'{self.file_name}.{file_extension}')
         encoding = self.kwargs.get('encoding', 'utf-8')
         self.current_file = open(file_path, 'w', encoding=encoding, newline='')
-        fieldnames = self.kwargs.get('fieldnames', None)
         dialect = self.kwargs.get('dialect', 'unix')
-        self.writer = DictWriter(self.current_file, fieldnames=fieldnames, dialect=dialect)
-        if fieldnames is not None:
-            self.writer.writeheader()
+        self.writer = DictWriter(self.current_file, fieldnames=self.fieldnames, dialect=dialect)
+        self.writer.writeheader()
 
     def write_row(self, row):
         self.writer.writerow(row)

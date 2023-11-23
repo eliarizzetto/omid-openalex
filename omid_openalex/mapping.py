@@ -27,6 +27,7 @@ from csv import DictReader, DictWriter
 from tqdm import tqdm
 import time
 import pandas as pd
+from omid_openalex.utils import read_csv_tables, MultiFileWriter
 
 
 class MetaProcessor:
@@ -121,6 +122,18 @@ class MetaProcessor:
                         f'Error: {field} field of row {row} is not in the expected format. The entity corresponding to {ra_entity} is not processed.')
                     continue
 
+    @staticmethod
+    def read_compressed_meta_dump(csv_dump_path: str):
+        csv.field_size_limit(131072 * 12)
+        with ZipFile(csv_dump_path) as archive:
+            for csv_file in tqdm(archive.namelist()):
+                if csv_file.endswith('.csv'):
+                    logging.info(f'Processing file {csv_file}')
+                    with archive.open(csv_file, 'r') as f:
+                        reader = DictReader(TextIOWrapper(f, encoding='utf-8'), dialect='unix')
+                        for row in reader:
+                            yield row
+
     def preprocess_meta_tables(self, meta_dump_zip:str, meta_ids_out:str, all_rows:bool = True) -> None:
         """
         Preprocesses the OC Meta tables to create reduced tables with essential metadata. For each entity represented in a
@@ -151,66 +164,45 @@ class MetaProcessor:
         resp_ags_out_dir = join(meta_ids_out, 'resp_ags')
         makedirs(resp_ags_out_dir, exist_ok=True)
         logging.info(f'Processing {meta_dump_zip} for reduced OC Meta table creation')
-        process_start_time = time.time()
-        with ZipFile(meta_dump_zip) as archive:
-            for csv_name in tqdm(archive.namelist()):
-                if csv_name.endswith('.csv'):
-                    logging.info(f'Processing {csv_name}')
-                    file_start_time = time.time()
-                    primary_ents_out_path = join(primary_ents_out_dir, basename(csv_name))
-                    venues_out_path = join(venues_out_dir, basename(csv_name))
-                    resp_ags_out_path = join(resp_ags_out_dir, basename(csv_name))
-                    out_venue_rows = set()  # stores rows dicts converted to tuples in a single file (venues)
-                    out_ra_rows = set()  # stores rows dicts converted to tuples in a single file (resp_ags)
-                    with (
-                        archive.open(csv_name, 'r') as csv_file,
-                        open(primary_ents_out_path, 'w', newline='', encoding='utf-8') as primary_ents_out_file,
-                        open(venues_out_path, 'w', newline='', encoding='utf-8') as venues_out_file,
-                        open(resp_ags_out_path, 'w', newline='', encoding='utf-8') as resp_ags_out_file
-                    ):
 
-                        primary_ents_writer = DictWriter(primary_ents_out_file,dialect='unix',fieldnames=['omid', 'ids', 'type'])
-                        venues_writer = DictWriter(venues_out_file,dialect='unix',fieldnames=['omid', 'ids'])
-                        resp_ags_writer = DictWriter(resp_ags_out_file, dialect='unix',fieldnames=['omid', 'ids', 'ra_role'])
-                        primary_ents_writer.writeheader()
-                        venues_writer.writeheader()
-                        resp_ags_writer.writeheader()
-                        try:
-                            reader = DictReader(TextIOWrapper(csv_file, encoding='utf-8'), dialect='unix')
-                            for row in reader:
+        out_venue_rows = set()  # stores rows dicts converted to tuples in a single file (venues)
+        out_ra_rows = set()  # stores rows dicts converted to tuples in a single file (resp_ags)
+        with (
+            MultiFileWriter(primary_ents_out_dir, fieldnames=['omid', 'ids', 'type']) as primary_ents_writer,
+            MultiFileWriter(venues_out_dir, fieldnames=['omid', 'ids']) as venues_writer,
+            MultiFileWriter(resp_ags_out_dir, fieldnames=['omid', 'ids', 'ra_role']) as resp_ags_writer
+        ):
+            for row in self.read_compressed_meta_dump(meta_dump_zip):
 
-                                # skip row if entity already has an openalex ID and all_rows is False
-                                if any(pid.startswith('openalex:') for pid in row['id'].split()) and all_rows is False:
-                                    continue
+                # skip row if entity already has an openalex ID and all_rows is False
+                if any(pid.startswith('openalex:') for pid in row['id'].split()) and all_rows is False:
+                    continue
 
-                                primary_entity_out_row: dict = self.get_entity_ids(row)
-                                venue_out_row: dict = self.get_venue_ids(row)
+                primary_entity_out_row: dict = self.get_entity_ids(row)
+                venue_out_row: dict = self.get_venue_ids(row)
 
-                                # create a row for the resource uniquely identified by the OMID in the 'id' field
-                                if primary_entity_out_row:
-                                    primary_ents_writer.writerow(primary_entity_out_row)  # primary entities are unique -> write them directly to the output file
+                # create a row for the resource uniquely identified by the OMID in the 'id' field
+                if primary_entity_out_row:
+                    primary_ents_writer.write_row(primary_entity_out_row)  # primary entities are unique -> write them directly to the output file
 
-                                # create a row for the resource identified by the OMID in the 'venue' field
-                                if venue_out_row:
-                                    out_venue_rows.add(tuple(venue_out_row.items()))
+                # create a row for the resource identified by the OMID in the 'venue' field
+                if venue_out_row:
+                    out_venue_rows.add(tuple(venue_out_row.items()))
 
-                                # create a row for each of the entities in the responsible agent fields ('author', 'publisher', 'editor' of the input row
-                                for field in ['author', 'publisher', 'editor']:
-                                    for ra_out_row in self.get_ra_ids(row, field):
-                                        # todo: consider splitting authors, publishers, editors into separate tables
-                                        #  (and modifying the get_ra_ids function accordingly,
-                                        #  i.e. removing a then unnecessary 'ra_role' field in the output dictionary)
+                # create a row for each of the entities in the responsible agent fields ('author', 'publisher', 'editor' of the input row
+                for field in ['author', 'publisher', 'editor']:
+                    for ra_out_row in self.get_ra_ids(row, field):
+                        # todo: consider splitting authors, publishers, editors into separate tables
+                        #  (and modifying the get_ra_ids function accordingly,
+                        #  i.e. removing a then unnecessary 'ra_role' field in the output dictionary)
 
-                                        out_ra_rows.add(tuple(ra_out_row.items()))
+                        out_ra_rows.add(tuple(ra_out_row.items()))
 
-                            # this prevents duplicates inside the same file (not in the whole dataset)
-                            venues_writer.writerows(map(dict, out_venue_rows))
-                            resp_ags_writer.writerows(map(dict, out_ra_rows))
-
-                            logging.info(
-                                f'Processing {csv_name} took {time.time() - file_start_time} seconds')
-                        except csv.Error as e:
-                            logging.error(f'Error while processing {csv_name}: {e}')
+            # this prevents duplicates inside the same file (not in the whole dataset)
+            for r in out_venue_rows:
+                venues_writer.write_row(dict(r))
+            for r in out_ra_rows:
+                resp_ags_writer.write_row(dict(r))
 
 
 class OpenAlexProcessor:

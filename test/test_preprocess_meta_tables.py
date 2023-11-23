@@ -64,9 +64,9 @@ class MetaProcessorTest(unittest.TestCase):
         expected_resp_ags_file = join(self.expected_output_dir, 'resp_ags', 'test.csv')
 
         # Define paths to actual output files
-        actual_primary_ents_file = join(actual_output_dir, 'primary_ents', 'test.csv')
-        actual_venues_file = join(actual_output_dir, 'venues', 'test.csv')
-        actual_resp_ags_file = join(actual_output_dir, 'resp_ags', 'test.csv')
+        actual_primary_ents_file = join(actual_output_dir, 'primary_ents', '0.csv')
+        actual_venues_file = join(actual_output_dir, 'venues', '0.csv')
+        actual_resp_ags_file = join(actual_output_dir, 'resp_ags', '0.csv')
 
         # Perform assertions to check if the actual output files have been created at the intended path
         self.assertTrue(os.path.exists(actual_primary_ents_file), "Actual primary entities file should exist")
@@ -86,7 +86,7 @@ class MetaProcessorTest(unittest.TestCase):
         self.meta_processor.preprocess_meta_tables(inp_dir_all_rows, actual_out_dir_all_rows, all_rows=True)
 
         all_rows_expected_file = join(expected_out_dir_all_rows, 'primary_ents', 'test_process_all.csv')
-        all_rows_actual_file = join(actual_out_dir_all_rows, 'primary_ents', 'test_process_all.csv')
+        all_rows_actual_file = join(actual_out_dir_all_rows, 'primary_ents', '0.csv')
         self.assertFilesEqual(all_rows_expected_file, all_rows_actual_file)
 
     def assertFilesEqual(self, expected_file, actual_file):
