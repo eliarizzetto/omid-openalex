@@ -13,6 +13,7 @@ import re
 from pprint import pprint
 import gzip
 from typing import Union, Literal
+from omid_openalex.utils import read_csv_tables
 
 
 URI_TYPE_DICT = {
@@ -94,7 +95,7 @@ def populate_omid_db(omid_db_path:str, meta_tables_csv:str):
         cur.execute('CREATE TABLE Omid (omid TEXT PRIMARY KEY)')
         conn.commit()
 
-        for row in tqdm(read_output_tables(meta_tables_csv)):
+        for row in tqdm(read_csv_tables(meta_tables_csv)):
             curr_omid = row['omid']
             cur.execute('INSERT INTO Omid VALUES (?)', (curr_omid,))
         conn.commit()
@@ -171,36 +172,8 @@ def write_extra_br_tables(br_rdf_path: str, omid_db_path: str, out_dir: str, max
     if current_file:
         current_file.close()
 
-# def read_output_tables(dir:str):
-#     """
-#     Reads the output CSV non-compressed tables and yields the rows.
-#     :param dir:
-#     :return:
-#     """
-#     for file in listdir(dir):
-#         if file.endswith('.csv'):
-#             with open(join(dir, file), 'r', encoding='utf-8') as f:
-#                 reader = DictReader(f, dialect='unix')
-#                 for row in reader:
-#                     yield row
 
 
-def read_output_tables(*dirs):
-    """
-    Reads the output CSV non-compressed tables from one or more directories and yields the rows.
-    :param dirs: One or more directories to read files from, provided as variable-length arguments.
-    :return: Yields rows from all CSV files in the specified directories.
-    """
-    for directory in dirs:
-        if isinstance(directory, str):
-            for file in listdir(directory):
-                if file.endswith('.csv'):
-                    with open(join(directory, file), 'r', encoding='utf-8') as f:
-                        reader = DictReader(f, dialect='unix')
-                        for row in reader:
-                            yield row
-        else:
-            raise ValueError("Each argument must be a string representing a directory path.")
 
 def analyse_provenance(db_path, *dirs):
     res = defaultdict(lambda: defaultdict(int))
@@ -209,7 +182,7 @@ def analyse_provenance(db_path, *dirs):
         cur = conn.cursor()
         query = 'SELECT source_uri FROM Provenance WHERE br_uri = ?'
 
-        for row in tqdm(read_output_tables(*dirs)):
+        for row in tqdm(read_csv_tables(*dirs)):
             br = row['omid'].replace('omid:', 'https://w3id.org/oc/meta/')
             cur.execute(query, (br,))
             query_res = cur.fetchone()
@@ -237,47 +210,6 @@ def analyse_provenance(db_path, *dirs):
     logging.info(f'OMID-only resources count by type (these BRs have no other PIDs): {dict(omid_only_distr)}')
     return dict(res), dict(omid_only_distr)
 
-class MultiFileWriter:
-    def __init__(self, out_dir, nrows=10000, **kwargs):
-        self.out_dir = out_dir
-        self.max_rows_per_file = nrows  # maximum number of rows per file
-        self.file_name = 0
-        self.rows_written = 0
-        self.current_file = None
-        self.kwargs = kwargs
-        makedirs(out_dir, exist_ok=True)
-
-    def __enter__(self):
-        self._open_new_file()
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close()
-
-    def _open_new_file(self):
-        if self.current_file:
-            self.current_file.close()
-        file_extension = self.kwargs.get('file_extension', 'csv')
-        file_path = join(self.out_dir, f'{self.file_name}.{file_extension}')
-        encoding = self.kwargs.get('encoding', 'utf-8')
-        self.current_file = open(file_path, 'w', encoding=encoding, newline='')
-        fieldnames = self.kwargs.get('fieldnames', None)
-        dialect = self.kwargs.get('dialect', 'unix')
-        self.writer = DictWriter(self.current_file, fieldnames=fieldnames, dialect=dialect)
-        if fieldnames is not None:
-            self.writer.writeheader()
-
-    def write_row(self, row):
-        self.writer.writerow(row)
-        self.rows_written += 1
-        if self.rows_written >= self.max_rows_per_file:
-            self.file_name += 1
-            self.rows_written = 0
-            self._open_new_file()
-
-    def close(self):
-        if self.current_file:
-            self.current_file.close()
 
 if __name__ == '__main__':
     csv.field_size_limit(131072 * 12)
