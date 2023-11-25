@@ -7,6 +7,7 @@ import logging
 from omid_openalex.utils import read_csv_tables, MultiFileWriter
 from collections import defaultdict
 from os import makedirs
+from os.path import dirname
 import csv
 import argparse
 import yaml
@@ -127,6 +128,7 @@ class ProvenanceAnalyser:
 
         :return: None
         """
+        makedirs(dirname(self.prov_db_path), exist_ok=True)
         with sql.connect(self.prov_db_path) as conn:
             cur = conn.cursor()
             cur.execute('CREATE TABLE IF NOT EXISTS Provenance (br_uri TEXT PRIMARY KEY, source_uri TEXT)')
@@ -144,6 +146,7 @@ class ProvenanceAnalyser:
         :param meta_tables_csv: the path to the folder storing the CSV files resulting from the pre-processing of the CSV Meta dump.
         :return:
         """
+        makedirs(dirname(self.omid_db_path), exist_ok=True)
         with sql.connect(self.omid_db_path) as conn:
             cur = conn.cursor()
             cur.execute('DROP TABLE IF EXISTS omid')
@@ -252,6 +255,7 @@ class ProvenanceAnalyser:
         return dict(res)
 
 if __name__ == '__main__':
+
     logging.basicConfig(level=logging.WARNING, filename='prov.log', filemode='w')
 
     parser = argparse.ArgumentParser(description='Provenance Analysis Tool')
