@@ -132,7 +132,7 @@ class ProvenanceAnalyser:
         with sql.connect(self.prov_db_path) as conn:
             cur = conn.cursor()
             cur.execute('CREATE TABLE IF NOT EXISTS Provenance (br_uri TEXT PRIMARY KEY, source_uri TEXT)')
-            for prov_graph in tqdm(self._get_provenance_data()):
+            for prov_graph in tqdm(self._get_provenance_data(), desc='Populating provenance database', unit='entity'):
                 entity_prov = self._get_entity_prov(prov_graph)
                 if entity_prov:
                     cur.execute('INSERT INTO Provenance VALUES (?, ?)', (entity_prov['br'], json.dumps(entity_prov['source'])))
@@ -141,9 +141,6 @@ class ProvenanceAnalyser:
     def populate_omid_db(self):
         """
         Creates a flat-file database with only one table and one column: the OMID of the bibliographic resource (omid, str).
-
-        :param omid_db_path:
-        :param meta_tables_csv: the path to the folder storing the CSV files resulting from the pre-processing of the CSV Meta dump.
         :return:
         """
         makedirs(dirname(self.omid_db_path), exist_ok=True)
@@ -163,7 +160,7 @@ class ProvenanceAnalyser:
             for filepath in archive.namelist():
                 if 'prov' not in filepath and filepath.endswith('.zip'):
                     with ZipFile(archive.open(filepath)) as br_data_archive:
-                        for file in tqdm(br_data_archive.namelist()):
+                        for file in br_data_archive.namelist():
                             if file.endswith('.json'):
                                 with br_data_archive.open(file) as f:
                                     data: list = json.load(f)
@@ -185,6 +182,12 @@ class ProvenanceAnalyser:
         return {'omid': omid, 'type': type}
 
     def write_extra_br_tables(self):
+        """
+        Writes CSV tables for OC Meta bibliographic resources that have not been processed by the mapping tool,
+        either because there are no external IDs associated with them, or because they were not included in
+        the CSV dump of OC Meta.
+        :return:
+        """
         makedirs(self.extra_br_out_dir, exist_ok=True)
         csv.field_size_limit(131072 * 12)
         fieldnames = ['omid', 'type', 'omid_only']
@@ -192,7 +195,7 @@ class ProvenanceAnalyser:
         with sql.connect(self.omid_db_path) as conn, MultiFileWriter(self.extra_br_out_dir, fieldnames=fieldnames) as writer:
             cur = conn.cursor()
 
-            for br in tqdm(self.get_br_data_from_rdf()):
+            for br in tqdm(self.get_br_data_from_rdf(), desc='Writing non-processed entities to tables', unit='br'):
                 lookup_omid = br['@id'].replace('https://w3id.org/oc/meta/', 'omid:')
                 cur.execute('SELECT omid FROM Omid WHERE omid=?', (lookup_omid,))
                 res = cur.fetchone()
@@ -205,7 +208,8 @@ class ProvenanceAnalyser:
     @staticmethod
     def _sort_prov_analysis_results(provenance_data: dict):
         """
-        Sort the results of the analysis on provenance data by the sum of values in nested dictionaries in descending order. Each nested dictionary is also sorted by values in descending order.
+        Sort the results of the analysis on provenance data by the sum of values in nested dictionaries in descending
+        order. Each nested dictionary is also sorted by values in descending order.
         :param provenance_data:
         :return:
         """
@@ -275,7 +279,11 @@ if __name__ == '__main__':
         results_out_path=config_data['results_out_path']
     )
 
+    print('Populating provenance database...')
     analyser.populate_prov_db()
+    print('Populating OMID database...')
     analyser.populate_omid_db()
+    print('Writing extra BR tables...')
     analyser.write_extra_br_tables()
+    print('Analysing provenance...')
     analyser.analyse_provenance()

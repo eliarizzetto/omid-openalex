@@ -1,0 +1,476 @@
+{
+    "proceedings": {
+        "https://api.crossref.org/": {
+            "omid_only": 5046154,
+            "other_pids": 31
+        },
+        "https://api.crossref.org/snapshots/monthly/2023/09/all.json.tar.gz": {
+            "omid_only": 324639,
+            "other_pids": 0
+        },
+        "https://doi.org/10.5281/zenodo.7845968": {
+            "omid_only": 0,
+            "other_pids": 11487
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42": {
+            "omid_only": 786,
+            "other_pids": 0
+        },
+        "https://doi.org/10.5281/zenodo.7845968 https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 17
+        },
+        "https://api.datacite.org/ https://api.crossref.org/": {
+            "omid_only": 1,
+            "other_pids": 0
+        }
+    },
+    "journal issue": {
+        "https://api.crossref.org/": {
+            "omid_only": 4667606,
+            "other_pids": 79827
+        },
+        "https://api.crossref.org/snapshots/monthly/2023/09/all.json.tar.gz": {
+            "omid_only": 202652,
+            "other_pids": 15
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42": {
+            "omid_only": 102115,
+            "other_pids": 0
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42 https://doi.org/10.5281/zenodo.7845968": {
+            "omid_only": 3847,
+            "other_pids": 0
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42 https://api.crossref.org/": {
+            "omid_only": 3305,
+            "other_pids": 120
+        },
+        "https://doi.org/10.5281/zenodo.7845968 https://api.crossref.org/": {
+            "omid_only": 2830,
+            "other_pids": 37
+        },
+        "https://doi.org/10.5281/zenodo.7845968": {
+            "omid_only": 1075,
+            "other_pids": 0
+        },
+        "https://api.datacite.org/ https://api.crossref.org/": {
+            "omid_only": 457,
+            "other_pids": 23
+        },
+        "https://api.crossref.org/snapshots/monthly/2023/09/all.json.tar.gz https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 92
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42 https://doi.org/10.5281/zenodo.7845968 https://api.crossref.org/": {
+            "omid_only": 12,
+            "other_pids": 13
+        },
+        "https://api.datacite.org/": {
+            "omid_only": 2,
+            "other_pids": 0
+        },
+        "https://api.crossref.org/snapshots/monthly/2023/09/all.json.tar.gz https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42": {
+            "omid_only": 2,
+            "other_pids": 0
+        }
+    },
+    "book": {
+        "https://api.crossref.org/": {
+            "omid_only": 2405267,
+            "other_pids": 91797
+        },
+        "https://api.crossref.org/snapshots/monthly/2023/09/all.json.tar.gz": {
+            "omid_only": 2626,
+            "other_pids": 16272
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42": {
+            "omid_only": 3757,
+            "other_pids": 0
+        },
+        "https://doi.org/10.5281/zenodo.7845968": {
+            "omid_only": 0,
+            "other_pids": 1247
+        },
+        "https://api.crossref.org/snapshots/monthly/2023/09/all.json.tar.gz https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 589
+        },
+        "https://api.datacite.org/": {
+            "omid_only": 0,
+            "other_pids": 300
+        },
+        "https://api.datacite.org/ https://api.crossref.org/": {
+            "omid_only": 1,
+            "other_pids": 28
+        },
+        "https://doi.org/10.5281/zenodo.7845968 https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 2
+        }
+    },
+    "journal volume": {
+        "https://api.crossref.org/": {
+            "omid_only": 1440942,
+            "other_pids": 95
+        },
+        "https://api.crossref.org/snapshots/monthly/2023/09/all.json.tar.gz": {
+            "omid_only": 106965,
+            "other_pids": 0
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42": {
+            "omid_only": 22602,
+            "other_pids": 0
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42 https://api.crossref.org/": {
+            "omid_only": 2125,
+            "other_pids": 0
+        },
+        "https://doi.org/10.5281/zenodo.7845968 https://api.crossref.org/": {
+            "omid_only": 1730,
+            "other_pids": 0
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42 https://doi.org/10.5281/zenodo.7845968": {
+            "omid_only": 910,
+            "other_pids": 0
+        },
+        "https://api.datacite.org/ https://api.crossref.org/": {
+            "omid_only": 436,
+            "other_pids": 0
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42 https://doi.org/10.5281/zenodo.7845968 https://api.crossref.org/": {
+            "omid_only": 27,
+            "other_pids": 0
+        },
+        "https://api.datacite.org/": {
+            "omid_only": 1,
+            "other_pids": 0
+        },
+        "https://doi.org/10.5281/zenodo.7845968 https://api.datacite.org/ https://api.crossref.org/": {
+            "omid_only": 1,
+            "other_pids": 0
+        }
+    },
+    "dataset": {
+        "https://api.datacite.org/": {
+            "omid_only": 0,
+            "other_pids": 1238173
+        },
+        "https://doi.org/10.5281/zenodo.7845968": {
+            "omid_only": 0,
+            "other_pids": 203240
+        },
+        "https://api.datacite.org/ https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 3521
+        },
+        "https://doi.org/10.5281/zenodo.7845968 https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 190
+        },
+        "https://doi.org/10.5281/zenodo.7845968 https://api.datacite.org/": {
+            "omid_only": 0,
+            "other_pids": 165
+        },
+        "https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 46
+        },
+        "https://doi.org/10.5281/zenodo.7845968 https://api.datacite.org/ https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 6
+        }
+    },
+    "": {
+        "https://api.crossref.org/": {
+            "omid_only": 356955,
+            "other_pids": 324066
+        },
+        "https://doi.org/10.5281/zenodo.7845968": {
+            "omid_only": 0,
+            "other_pids": 355075
+        },
+        "https://api.crossref.org/snapshots/monthly/2023/09/all.json.tar.gz": {
+            "omid_only": 71227,
+            "other_pids": 149362
+        },
+        "https://api.datacite.org/": {
+            "omid_only": 9,
+            "other_pids": 162061
+        },
+        "https://api.datacite.org/ https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 287
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42": {
+            "omid_only": 1,
+            "other_pids": 153
+        },
+        "https://doi.org/10.5281/zenodo.7845968 https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 16
+        }
+    },
+    "journal article": {
+        "https://doi.org/10.5281/zenodo.7845968": {
+            "omid_only": 0,
+            "other_pids": 202018
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42": {
+            "omid_only": 0,
+            "other_pids": 42009
+        },
+        "https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 4983
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42 https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 2246
+        },
+        "https://api.datacite.org/": {
+            "omid_only": 0,
+            "other_pids": 1075
+        },
+        "https://api.crossref.org/snapshots/monthly/2023/09/all.json.tar.gz": {
+            "omid_only": 0,
+            "other_pids": 484
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42 https://doi.org/10.5281/zenodo.7845968": {
+            "omid_only": 0,
+            "other_pids": 374
+        },
+        "https://doi.org/10.5281/zenodo.7845968 https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 57
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42 https://doi.org/10.5281/zenodo.7845968 https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 31
+        },
+        "https://api.datacite.org/ https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 7
+        }
+    },
+    "reference book": {
+        "https://api.crossref.org/": {
+            "omid_only": 186140,
+            "other_pids": 25
+        },
+        "https://api.crossref.org/snapshots/monthly/2023/09/all.json.tar.gz": {
+            "omid_only": 2286,
+            "other_pids": 1
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42": {
+            "omid_only": 1,
+            "other_pids": 0
+        }
+    },
+    "report": {
+        "https://api.datacite.org/": {
+            "omid_only": 0,
+            "other_pids": 133865
+        },
+        "https://doi.org/10.5281/zenodo.7845968": {
+            "omid_only": 0,
+            "other_pids": 1993
+        },
+        "https://api.datacite.org/ https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 115
+        },
+        "https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 15
+        },
+        "https://doi.org/10.5281/zenodo.7845968 https://api.datacite.org/": {
+            "omid_only": 0,
+            "other_pids": 6
+        },
+        "https://doi.org/10.5281/zenodo.7845968 https://api.datacite.org/ https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 3
+        }
+    },
+    "journal": {
+        "https://api.crossref.org/": {
+            "omid_only": 56561,
+            "other_pids": 52
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42": {
+            "omid_only": 40080,
+            "other_pids": 1499
+        },
+        "https://api.crossref.org/snapshots/monthly/2023/09/all.json.tar.gz": {
+            "omid_only": 5000,
+            "other_pids": 3
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42 https://doi.org/10.5281/zenodo.7845968": {
+            "omid_only": 13,
+            "other_pids": 21
+        },
+        "https://doi.org/10.5281/zenodo.7845968": {
+            "omid_only": 0,
+            "other_pids": 19
+        },
+        "https://api.datacite.org/": {
+            "omid_only": 1,
+            "other_pids": 6
+        },
+        "https://doi.org/10.5281/zenodo.7845968 https://api.crossref.org/": {
+            "omid_only": 5,
+            "other_pids": 0
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42 https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 3
+        }
+    },
+    "book series": {
+        "https://api.crossref.org/": {
+            "omid_only": 26676,
+            "other_pids": 155
+        },
+        "https://api.crossref.org/snapshots/monthly/2023/09/all.json.tar.gz": {
+            "omid_only": 7,
+            "other_pids": 14
+        },
+        "https://api.crossref.org/snapshots/monthly/2023/09/all.json.tar.gz https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 3
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42": {
+            "omid_only": 2,
+            "other_pids": 0
+        },
+        "https://api.datacite.org/": {
+            "omid_only": 0,
+            "other_pids": 1
+        }
+    },
+    "dissertation": {
+        "https://doi.org/10.5281/zenodo.7845968": {
+            "omid_only": 0,
+            "other_pids": 7983
+        },
+        "https://doi.org/10.5281/zenodo.7845968 https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 5
+        },
+        "https://api.datacite.org/": {
+            "omid_only": 0,
+            "other_pids": 3
+        }
+    },
+    "book chapter": {
+        "https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 1230
+        },
+        "https://api.crossref.org/snapshots/monthly/2023/09/all.json.tar.gz": {
+            "omid_only": 0,
+            "other_pids": 1197
+        },
+        "https://doi.org/10.5281/zenodo.7845968": {
+            "omid_only": 0,
+            "other_pids": 690
+        },
+        "https://api.datacite.org/": {
+            "omid_only": 0,
+            "other_pids": 162
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42 https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 15
+        }
+    },
+    "computer program": {
+        "https://doi.org/10.5281/zenodo.7845968": {
+            "omid_only": 0,
+            "other_pids": 1992
+        },
+        "https://doi.org/10.5281/zenodo.7845968 https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 5
+        },
+        "https://doi.org/10.5281/zenodo.7845968 https://api.datacite.org/": {
+            "omid_only": 0,
+            "other_pids": 3
+        }
+    },
+    "proceedings article": {
+        "https://api.crossref.org/snapshots/monthly/2023/09/all.json.tar.gz": {
+            "omid_only": 0,
+            "other_pids": 778
+        },
+        "https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 84
+        },
+        "https://api.datacite.org/": {
+            "omid_only": 0,
+            "other_pids": 6
+        }
+    },
+    "reference entry": {
+        "https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 87
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42 https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 2
+        }
+    },
+    "series": {
+        "https://api.crossref.org/": {
+            "omid_only": 9,
+            "other_pids": 17
+        },
+        "https://api.datacite.org/": {
+            "omid_only": 15,
+            "other_pids": 4
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42": {
+            "omid_only": 14,
+            "other_pids": 2
+        },
+        "https://nih.figshare.com/collections/iCite_Database_Snapshots_NIH_Open_Citation_Collection_/4586573/42 https://doi.org/10.5281/zenodo.7845968 https://api.datacite.org/": {
+            "omid_only": 0,
+            "other_pids": 1
+        },
+        "https://api.crossref.org/snapshots/monthly/2023/09/all.json.tar.gz": {
+            "omid_only": 0,
+            "other_pids": 1
+        }
+    },
+    "web content": {
+        "https://api.crossref.org/snapshots/monthly/2023/09/all.json.tar.gz": {
+            "omid_only": 0,
+            "other_pids": 26
+        },
+        "https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 3
+        }
+    },
+    "standard": {
+        "https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 4
+        }
+    },
+    "data management plan": {
+        "https://doi.org/10.5281/zenodo.7845968": {
+            "omid_only": 0,
+            "other_pids": 4
+        }
+    },
+    "book section": {
+        "https://api.crossref.org/": {
+            "omid_only": 0,
+            "other_pids": 3
+        }
+    }
+}
