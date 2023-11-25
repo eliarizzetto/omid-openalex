@@ -9,11 +9,10 @@ from csv import DictReader, DictWriter
 from io import TextIOWrapper
 import json
 from collections import defaultdict
-import re
 from pprint import pprint
 import gzip
 from typing import Union, Literal
-from omid_openalex.utils import read_csv_tables
+from omid_openalex.utils import read_csv_tables, MultiFileWriter
 
 
 URI_TYPE_DICT = {
@@ -68,7 +67,7 @@ def populate_omid_db(omid_db_path:str, meta_tables_csv:str):
         cur.execute('CREATE TABLE Omid (omid TEXT PRIMARY KEY)')
         conn.commit()
 
-        for row in tqdm(read_csv_tables(meta_tables_csv)):
+        for row in read_csv_tables(meta_tables_csv):
             curr_omid = row['omid']
             cur.execute('INSERT INTO Omid VALUES (?)', (curr_omid,))
         conn.commit()
@@ -79,7 +78,7 @@ def get_br_data_from_rdf(br_rdf_path:str):
         for filepath in archive.namelist():
             if 'prov' not in filepath and filepath.endswith('.zip'):
                 with ZipFile(archive.open(filepath)) as br_data_archive:
-                    for file in br_data_archive.namelist():
+                    for file in tqdm(br_data_archive.namelist()):
                         if file.endswith('.json'):
                             with br_data_archive.open(file) as f:
                                 data: list = json.load(f)
@@ -88,9 +87,6 @@ def get_br_data_from_rdf(br_rdf_path:str):
                                         yield br
 
 def normalize_type_string(type_str:str)->str:
-    # type_str = type_str.removeprefix('http://purl.org/spar/fabio/')
-    # words = re.findall(r'[A-Z][^A-Z]*', type_str)
-    # normalized = ' '.join(words).lower()
     normalized = URI_TYPE_DICT.get(type_str)
     return normalized if normalized else type_str
 
@@ -106,23 +102,10 @@ def get_br_omid_and_type(br)->dict:
 
 def write_extra_br_tables(br_rdf_path: str, omid_db_path: str, out_dir: str, max_rows_per_file=10000):
     makedirs(out_dir, exist_ok=True)
-    file_name = 0
-    rows_written = 0
-    current_file = None
     csv.field_size_limit(131072 * 12)
+    fieldnames = ['omid', 'type', 'omid_only']
 
-    def open_new_file():
-        nonlocal file_name, current_file
-        if current_file:
-            current_file.close()
-        current_file = open(join(out_dir, f'{file_name}.csv'), 'w', encoding='utf-8', newline='')
-        writer = DictWriter(current_file, fieldnames=['omid', 'type', 'omid_only'], dialect='unix')
-        writer.writeheader()
-        return writer
-
-    writer = open_new_file()
-
-    with sql.connect(omid_db_path) as conn:
+    with sql.connect(omid_db_path) as conn, MultiFileWriter(out_dir, fieldnames=fieldnames) as writer:
         cur = conn.cursor()
 
         for br in tqdm(get_br_data_from_rdf(br_rdf_path)):
@@ -134,54 +117,55 @@ def write_extra_br_tables(br_rdf_path: str, omid_db_path: str, out_dir: str, max
                 if not br.get('http://purl.org/spar/datacite/hasIdentifier'):
                     out_row['omid_only'] = True
 
-                writer.writerow(out_row)
-                rows_written += 1
+                writer.write_row(out_row)
 
-            if rows_written >= max_rows_per_file:
-                file_name += 1
-                writer = open_new_file()
-                rows_written = 0
+def sort_prov_analysis_results(provenance_data:dict):
+    """
+    Sort the results of the analysis on provenance data by the sum of values in nested dictionaries in descending order. Each nested dictionary is also sorted by values in descending order.
+    :param provenance_data:
+    :return:
+    """
+    for key in provenance_data:
+        provenance_data[key] = dict(sorted(provenance_data[key].items(), key=lambda x: sum(x[1].values()), reverse=True))
 
-    if current_file:
-        current_file.close()
+    # Sort the outer dictionary by the sum of values in nested dictionaries in descending order
+    result = dict(sorted(provenance_data.items(), key=lambda x: sum([v2 for v in x[1].values() for v2 in v.values()]), reverse=True))
+    return result
 
-
-
-
-def analyse_provenance(db_path, *dirs):
-    res = defaultdict(lambda: defaultdict(int))
-    omid_only_distr = defaultdict((lambda :defaultdict(lambda: defaultdict(int))))
+def analyse_provenance(db_path, out_filepath='provenance_analysis_results.json', *dirs):
+    res = defaultdict(lambda :defaultdict(lambda: {'omid_only': 0, 'other_pids': 0}))
     with sql.connect(db_path) as conn:
         cur = conn.cursor()
         query = 'SELECT source_uri FROM Provenance WHERE br_uri = ?'
 
-        for row in tqdm(read_csv_tables(*dirs)):
+        for row in read_csv_tables(*dirs):
             br = row['omid'].replace('omid:', 'https://w3id.org/oc/meta/')
             cur.execute(query, (br,))
             query_res = cur.fetchone()
             if query_res:
                 source = ' '.join(tuple(set(json.loads(query_res[0]))))
-                res[row['type']][source] +=1
 
                 if row.get('omid_only'):
                 # if no other ID than OMID, a value has been specified for this field, else it is empty or absent at all
-                    omid_only_distr[row['type']][source]['omid_only'] += 1
+                    res[row['type']][source]['omid_only'] += 1
                 else:
-                    omid_only_distr[row['type']][source]['other_pids'] += 1
+                    res[row['type']][source]['other_pids'] += 1
             else:
                 logging.warning(f'No provenance information found for {row["omid"]}')
 
     for k, v in res.items():
         res[k] = dict(v)
+        for k2, v2 in res[k].items():
+            res[k][k2] = dict(v2)
 
-    for k, v in omid_only_distr.items():
-        omid_only_distr[k] = dict(v)
-        for k2, v2 in omid_only_distr[k].items():
-            omid_only_distr[k][k2] = dict(v2)
 
-    logging.info(f'Provenance analysis results: {dict(res)}')
-    logging.info(f'OMID-only resources count by type (these BRs have no other PIDs): {dict(omid_only_distr)}')
-    return dict(res), dict(omid_only_distr)
+    res = sort_prov_analysis_results(dict(res))
+    logging.info(f'Provenance analysis results: {res}')
+
+    with open(out_filepath, 'w', encoding='utf-8') as fileout:
+        json.dump(res, fileout, indent=4)
+
+    return dict(res)
 
 
 if __name__ == '__main__':
