@@ -206,7 +206,7 @@ class ProvenanceAnalyser:
 
                     writer.write_row(out_row)
     @staticmethod
-    def _sort_prov_analysis_results(provenance_data: dict):
+    def sort_prov_analysis_results(provenance_data: dict):
         """
         Sort the results of the analysis on provenance data by the sum of values in nested dictionaries in descending
         order. Each nested dictionary is also sorted by values in descending order.
@@ -250,7 +250,7 @@ class ProvenanceAnalyser:
             for k2, v2 in res[k].items():
                 res[k][k2] = dict(v2)
 
-        res = self._sort_prov_analysis_results(dict(res))
+        res = self.sort_prov_analysis_results(dict(res))
         logging.info(f'Provenance analysis results: {res}')
 
         with open(self.results_out_path, 'w', encoding='utf-8') as fileout:
