@@ -4,6 +4,7 @@ from os.path import join, isdir
 from csv import DictWriter, DictReader
 from tqdm import tqdm
 import pandas as pd
+import json
 
 def read_csv_tables(*dirs, use_pandas=False):
     """
@@ -37,10 +38,10 @@ class MultiFileWriter:
     A context manager for writing rows to CSV files with automatic file splitting.
 
     :param out_dir: The directory for storing CSV files.
-    :param fieldnames: Field names for the CSV file.
-    :type fieldnames: List[str]
     :param max_rows_per_file: Max rows before creating a new file (default: 10,000).
     :type max_rows_per_file: int, optional
+    :param fieldnames: Field names for the CSV file.
+    :type fieldnames: List[str]
     :param file_extension: File extension for the CSV files (default: 'csv').
     :type file_extension: str, optional
     :param encoding: Encoding for writing CSV files (default: 'utf-8').
@@ -56,9 +57,8 @@ class MultiFileWriter:
                 processed_row = process_data(data_row)
                 file_writer.write_row(processed_row)
     """
-    def __init__(self, out_dir, fieldnames, nrows=10000, **kwargs):
+    def __init__(self, out_dir, nrows=10000, **kwargs):
         self.out_dir = out_dir
-        self.fieldnames = fieldnames
         self.max_rows_per_file = nrows  # maximum number of rows per file
         self.file_name = 0
         self.rows_written = 0
@@ -81,18 +81,33 @@ class MultiFileWriter:
         file_path = join(self.out_dir, f'{self.file_name}.{file_extension}')
         encoding = self.kwargs.get('encoding', 'utf-8')
         self.current_file = open(file_path, 'w', encoding=encoding, newline='')
-        dialect = self.kwargs.get('dialect', 'unix')
-        self.writer = DictWriter(self.current_file, fieldnames=self.fieldnames, dialect=dialect)
-        self.writer.writeheader()
+
+        if file_extension == 'csv':
+            fieldnames = self.kwargs.get('fieldnames', None)
+            dialect = self.kwargs.get('dialect', 'unix')
+            self.writer = DictWriter(self.current_file, fieldnames=fieldnames, dialect=dialect)
+            self.writer.writeheader()
+            self.write_line = self._write_csv_row
+        elif file_extension == 'json':
+            self.write_line = self._write_jsonl_row
+        else:
+            raise ValueError("File extension must be either 'csv' or 'json'.")
+
+    def _write_csv_row(self, row):
+        self.writer.writerow(row)
+
+
+    def _write_jsonl_row(self, row):
+        json_line = json.dumps(row, ensure_ascii=False)
+        self.current_file.write(json_line  + '\n')
 
     def write_row(self, row):
-        self.writer.writerow(row)
+        self.write_line(row)
         self.rows_written += 1
         if self.rows_written >= self.max_rows_per_file:
             self.file_name += 1
             self.rows_written = 0
             self._open_new_file()
-
     def close(self):
         if self.current_file:
             self.current_file.close()
