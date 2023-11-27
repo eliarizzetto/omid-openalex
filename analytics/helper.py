@@ -16,6 +16,8 @@ import warnings
 import csv
 from typing import Union
 from collections import Counter, defaultdict
+from omid_openalex.utils import MultiFileWriter
+from omid_openalex.mapping import OpenAlexProcessor
 
 def analyse_multi_mapped_omids(file_path:str, res_type='journal article'):
     """
@@ -222,10 +224,8 @@ def query_reduced_meta_tables(query_list: List[str], inp_dir: str, prefix='doi:'
                             result.append(row)
     return result
 
-
-def query_oa_dump(query_list: List[str], inp_dir: str, out_dir: str, ent_type:Literal['works', 'sources']) -> None:
+def write_multi_mapped_full_metadata(query_list: List[str], inp_dir: str, out_dir: str) -> None:
     """
-    DEPRECATED: use get_full_metadata_for_oaids instead.
     Retrieves from the OpenAlex dump the full metadata about the bibliographic resource entities identified by the IDs
     in the input query_list; stores the output to a CSV file. A reciprocally compatible query_list and inp_dir
     should be specified, since the input folder contains a set of a specific type of OpenAlex entities
@@ -234,73 +234,16 @@ def query_oa_dump(query_list: List[str], inp_dir: str, out_dir: str, ent_type:Li
         :param query_list: a list of strings of the form 'W\d+' or 'S\d+' (e.g. 'W12345678' or 'S12345678').
         :param inp_dir: either the path to the Works folder or the Sources folder of the OA dump.
         :param out_dir: the path to the output folder, where the results will be stored in a jsonl file named according to the ent_type.
-        :param ent_type: either 'works' or 'sources', used only for naming the output file.
         :return:
     """
-    warnings.warn('This function is deprecated. Use get_full_metadata_for_oaids instead: it is faster, since it parallelizes the process using Dask.', DeprecationWarning)
     query_set = set(query_list)
-    process_start_time = time.time()
-    inp_subdirs = [name for name in listdir(inp_dir) if isdir(join(inp_dir, name))]
-    out_filename = f'queried_{ent_type}_out.json'
     makedirs(out_dir, exist_ok=True)
-    out_filepath = join(out_dir, out_filename)
-    with jsonlines.open(out_filepath, 'a') as writer:  # see if you need encoding='utf-8'
-        # out_rows = []
-        for snapshot_folder_name in inp_subdirs:
-            snapshot_folder_path = join((inp_dir), snapshot_folder_name)
-            for compressed_jsonl_name in tqdm(listdir(snapshot_folder_path)):
-                inp_path = join(snapshot_folder_path, compressed_jsonl_name)
-                out_rows = []
-                with gzip.open((inp_path), 'r') as inp_jsonl:
-                    print(f'Processing {inp_path}')
-                    for line in inp_jsonl:
-                        line: dict = json.loads(line)
-                        oaid_iri_prefix = 'https://openalex.org/'
-                        if line['id'].removeprefix(oaid_iri_prefix) in query_set:
-                            out_rows.append(line)
-                for l in out_rows:
-                    writer.write(l)
-                print(f'Finished processing {inp_path}.')
+    oaid_iri_prefix = 'https://openalex.org/'
 
-    print(f'Process took {(time.time() - process_start_time) / 3600} hours.')
-
-
-def get_full_metadata_for_oaids(input_filepath, output_filepath, query_list):
-    """
-    Takes a list of OAIDs and extracts the full metadata for each of them from the OpenAlex dump, parallelizing the task
-    using Dask. A reciprocally compatible query_list and input_filepath (globstring) should be specified, since the input folder
-    contains a set of a specific type of OpenAlex entities (e.g. Works, Sources, etc.). E.g. if query_list contains
-    W-OAIDs, then input_filepath should be the (globstring) path to the Works folder of the OA dump.
-        :param input_filepath: globstring path to the files to retrieve the metadata from (e.g. 'data/works/**/*.gz')
-        :param output_filepath: the path to the folder where to store the output, i.e. where the .part files will be created.
-        :param query_list: list of OAIDs to extract (either of Works or Sources)
-        :return: None
-    """
-
-    query_set = set(query_list)
-    lines = db.read_text(input_filepath, encoding='utf-8', compression='gzip')
-    records = lines.map(json.loads)
-    records_to_keep = records.filter(lambda line: line['id'].removeprefix('https://openalex.org/') in query_set)
-    with ProgressBar():
-        records_to_keep.map(json.dumps).to_textfiles(output_filepath)  # writes the output to multiple .part files
-
-
-def unify_part_files(inp_path, out_path):
-    """
-    Takes the .part files created by get_full_metadata_for_oaids and merges them into a single JSON-L file.
-    :param inp_path: the globstring path to the .part files
-    :param out_path: the path to the single output file
-    :return:
-    """
-    bag = db.read_text(inp_path).map(json.loads)  # Read JSON files and parse each line
-    with ProgressBar():
-        combined_data = bag.compute()  # Trigger the computation and combine all the data (takes a while)
-
-    with open(out_path, 'w') as f:
-        for line in combined_data:
-            json.dump(line, f)
-            f.write('\n')
-    print(f"JSON-L full data for multi-mapped IDs saved to {out_path}")
+    with MultiFileWriter(out_dir, file_extension='json') as writer:
+        for record in OpenAlexProcessor.read_compressed_openalex_dump(inp_dir):
+            if record['id'].removeprefix(oaid_iri_prefix) in query_set:
+                writer.write_row(record)
 
 
 def reduce_merged_ids_table(input_filepath, output_filepath):
