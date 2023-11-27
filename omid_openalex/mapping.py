@@ -359,7 +359,7 @@ class OpenAlexProcessor:
         logging.info(f'Processing input folder {in_dir} for OpenAlex table creation')
         input_files = [join(root, file) for root, dirs, files in walk(in_dir) for file in files if file.endswith('.gz')]
 
-        for f in tqdm(input_files):
+        for f in tqdm(input_files, desc=f"Processing {in_dir}", unit="file"):
             logging.info(f'Processing file {f}')
             with gzip.open(f, 'r') as inp_jsonl:
                 for line in inp_jsonl:
