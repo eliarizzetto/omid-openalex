@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     print('Writing full metadata JSON-L files fro multi-mapped works')
     write_multi_mapped_full_metadata(query_list=mm_works_list, inp_dir=config['oa_dump_works'], out_dir=config['works_full_metadata_out_dir'])
-    print('Writing full metadata JSON-L files fro multi-mapped sources')
+    print('Writing full metadata JSON-L files for multi-mapped sources')
     write_multi_mapped_full_metadata(query_list=mm_sources_list, inp_dir=config['oa_dump_sources'], out_dir=config['sources_full_metadata_out_dir'])
 
 
