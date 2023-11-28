@@ -18,6 +18,10 @@ trials
 # Docs
 docs/
 
+# private configuration files
+# PostgreSQL
+/analytics/postgres_config.yaml
+
 # other
 *.db
 /omid_openalex/omid_openalex/prove.py
@@ -48,3 +52,4 @@ analytics/__pycache__/__init__.cpython-39.pyc
 /analytics/provenance_analysis_results_11nov.json
 /analytics/provenance_analysis_results_11nov_id_info.json
 /analytics/multi_map_categories.py
+/mm_latest/

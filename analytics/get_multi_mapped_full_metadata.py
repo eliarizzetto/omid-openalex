@@ -17,7 +17,8 @@ if __name__ == '__main__':
     mm_csv_path = config['mm_csv_path']
     mm_df = pd.read_csv(mm_csv_path, encoding='utf-8')
     mm_works_list, mm_sources_list = create_query_lists_oaid(mm_df)
-
+    print(f'Number of multi-mapped works of which to extract full records: {len(mm_works_list)}')
+    print(f'Number of multi-mapped sources of which to extract full records: {len(mm_sources_list)}')
 
 
     print('Writing full metadata JSON-L files for multi-mapped works')
