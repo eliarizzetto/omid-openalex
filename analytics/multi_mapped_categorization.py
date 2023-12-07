@@ -314,8 +314,8 @@ def postgres_categorize_mm(mm_csv_dir_path, out_file_path, **pg_conf):
 
 def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
     categories_count = dict()
-    categories_count['works'] = defaultdict(int)
-    categories_count['sources'] = defaultdict(int)
+    categories_count['works'] = defaultdict(lambda: defaultdict(int))
+    categories_count['sources'] = defaultdict(lambda: defaultdict(int))
     oa_uri_prefix = 'https://openalex.org/'
 
     version_pattern = re.compile(r'(?:[\.\/]v\d{1,2}[\./])|(?:[\.\/]v\d{1,2}$)|(?:\/\d{1,2}$)|(?:[^a-zA-Z]v\d{1,2}$)')
@@ -352,6 +352,7 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
 
             prefixed_oaids = [oa_uri_prefix + i for i in row['openalex_id'].split()]
             oaids_data = defaultdict(dict)
+            oc_br_type = row['type']
 
             visited_pids = set()
             visited_doi_prefixes = set()
@@ -383,7 +384,7 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
 
                     # WORKS CASE D: Multiple OpenAlex Works share the same DOI, PMID or PMCID
                     if any(v in visited_pids for v in oaids_data[oaid]['ids'].values() if v):
-                        categories_count['works']['D'] += 1
+                        categories_count['works'][oc_br_type]['D'] += 1
                         break
                     else:
                         visited_pids.update(oaids_data[oaid]['ids'].values())
@@ -394,7 +395,7 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
                         doi = doi.lower().removeprefix('https://doi.org/')
                         doi_prefix = doi.split('/')[0]
                         if re.findall(version_pattern, doi):
-                            categories_count['works']['A'] += 1
+                            categories_count['works'][oc_br_type]['A'] += 1
                             break
 
                         # WORKS CASE A, B, and C: preprints, postprints, and publisher versions hosted on platforms other than the publisher's
@@ -410,17 +411,17 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
                             # oaids_data[oaid]['primloc_version'] = primloctype_result[1] if primloctype_result else None
                             # if oaids_data[oaid]['primloc_type'] in ['ebook platform', 'repository', 'other'] or \
                             #         oaids_data[oaid]['primloc_version'] in ['submittedVersion', 'acceptedVersion']:
-                            #     categories_count['works']['ABC'] += 1
+                            #     categories_count['works'][oc_br_type]['ABC'] += 1
                             #     break
 
                             cur.execute(query_primloc_version, (oaid,))
                             primlocversion_result = cur.fetchone()
                             oaids_data[oaid]['primloc_version'] = primlocversion_result[0] if primlocversion_result else None
                             if oaids_data[oaid]['primloc_version'] in ['submittedVersion', 'acceptedVersion']:
-                                categories_count['works']['ABC'] += 1
+                                categories_count['works'][oc_br_type]['ABC'] += 1
                                 break
                         if any(doi.removeprefix(doi_prefix).startswith(s) for s in preprint_string_clues):
-                            categories_count['works']['possible_preprints'] += 1
+                            categories_count['works'][oc_br_type]['possible_preprints'] += 1
                             break
 
                         visited_doi_prefixes.add(doi_prefix)
@@ -434,17 +435,17 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
                                     visited_doi_prefixes) == 1:  # it means that all the DOIs share the same prefix, therefore have the same publisher
                                 if any(d.get('type') in ['other', 'peer-review', 'editorial', 'erratum', 'letter'] for d
                                        in oaids_data.values()):
-                                    categories_count['works']['EFG'] += 1
+                                    categories_count['works'][oc_br_type]['EFG'] += 1
                                     break
                                 else:
-                                    categories_count['works']['non classified'] += 1
+                                    categories_count['works'][oc_br_type]['non classified'] += 1
                                     break
 
                             else:
-                                categories_count['works']['non classified'] += 1
+                                categories_count['works'][oc_br_type]['non classified'] += 1
                                 break
                     if pos == (len(prefixed_oaids) - 1):
-                        categories_count['works']['non classified'] += 1
+                        categories_count['works'][oc_br_type]['non classified'] += 1
                         break
 
 
@@ -469,18 +470,19 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
 
                     # WORKS CASE A: Multiple OpenAlex Sources share the same ISSN/ISSN-L (do not consider Wikidata IDs)
                     if any(i in visited_pids for i in oaids_data[oaid]['ids']['issn'] if i):
-                        categories_count['sources']['A'] += 1
+                        categories_count['sources'][oc_br_type]['A'] += 1
                         break
                     else:
                         visited_pids.update(oaids_data[oaid]['ids']['issn'])
                         if pos == (len(prefixed_oaids) - 1):
-                            categories_count['sources']['non classified'] += 1
+                            categories_count['sources'][oc_br_type]['non classified'] += 1
                             break
 
 
     # transform nested defaultdicts into regular dicts
-    categories_count['works'] = dict(categories_count['works'])
-    categories_count['sources'] = dict(categories_count['sources'])
+    categories_count['works'] = {k: dict(v) for k,v in categories_count['works'].items()} # dict(categories_count['works'])
+
+    categories_count['sources'] = {k: dict(v) for k,v in categories_count['sources'].items()}  #  dict(categories_count['sources'])
 
     logging.info(f'Categories count: {categories_count}')
     pprint(categories_count)
@@ -503,4 +505,4 @@ if __name__ == '__main__':
     # #  ------ with sqlite -------
     logging.basicConfig(filename='sqlite_categorize_mm.log', level=logging.INFO)
 
-    print(sqlite_categorize_mm('mm_latest/', out_file_path='tmp_mm_categories.json', db_path='E:/sqlite_mm_openalex.db'))
+    sqlite_categorize_mm('mm_latest/', out_file_path='tmp_mm_categories.json', db_path='E:/sqlite_mm_openalex.db')
