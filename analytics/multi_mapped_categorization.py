@@ -221,7 +221,8 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
                                     categories_count['works'][oc_br_type]['EFG'] += 1
                                     break
                                 else:
-                                    categories_count['works'][oc_br_type]['non classified'] += 1
+                                    # categories_count['works'][oc_br_type]['non classified'] += 1
+                                    categories_count['works'][oc_br_type]['possible EFG'] += 1  # todo prova così, poi in caso toglilo e rimetti riga sopra
                                     break
 
                             else:
