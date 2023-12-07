@@ -53,3 +53,9 @@ analytics/__pycache__/__init__.cpython-39.pyc
 /analytics/provenance_analysis_results_11nov_id_info.json
 /analytics/multi_map_categories.py
 /mm_latest/
+/ASAPbio Preprint Directory 2023-08-09.csv
+/mm_categories.json
+/doi_prefix_register.json
+/preprint_prefix.json
+/tmp_mm_categories.json
+/analytics/get_preprint_prefix.py
