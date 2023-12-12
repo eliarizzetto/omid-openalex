@@ -1,14 +1,29 @@
 from collections import defaultdict
 import json
-import yaml
 from omid_openalex.utils import read_csv_tables
 from pprint import pprint
 import re
 from tqdm import tqdm
-import psycopg2 as pg
 import logging
-import tracemalloc
 import sqlite3 as sql
+
+
+# The 'CATEGORIES' dictionary below is only directed at humans and intended to be used as a reference for the categories' names, it is never used in the code!
+CATEGORIES = {
+    'works': {
+        'A': 'Multiple OpenAlex Works share the same DOI, PMID or PMCID',
+        'B': 'DOI(s) for preprint/postprint/version hosted in repository',
+        'C': 'Web page DOI + PDF DOI or error (in primary sources or in the collections)',
+        'D': 'Version-marked DOI',
+        'E': 'Preprint server DOI',
+        'F': 'Multiple DOIs all from the same publisher/DOI issuer',
+        'non classified': 'Non classified',
+    },
+    'sources': {
+        'A': 'Multiple OpenAlex Sources share the same ISSN/ISSN-L. Wikidata IDs are not considered.',
+        'non classified': 'Non classified',
+    }
+}
 
 preprint_string_clues = [
     '/agrirxiv',
@@ -167,7 +182,7 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
 
                     # WORKS CASE D: Multiple OpenAlex Works share the same DOI, PMID or PMCID
                     if any(v in visited_pids for v in oaids_data[oaid]['ids'].values() if v):
-                        categories_count['works'][oc_br_type]['D'] += 1
+                        categories_count['works'][oc_br_type]['A'] += 1
                         break
                     else:
                         visited_pids.update(oaids_data[oaid]['ids'].values())
@@ -178,7 +193,7 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
                         doi = doi.lower().removeprefix('https://doi.org/')
                         doi_prefix = doi.split('/')[0]
                         if re.findall(version_pattern, doi):
-                            categories_count['works'][oc_br_type]['A'] += 1
+                            categories_count['works'][oc_br_type]['D'] += 1
                             break
 
                         # WORKS CASE A, B, and C: preprints, postprints, and publisher versions hosted on platforms other than the publisher's
@@ -201,13 +216,14 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
                             primlocversion_result = cur.fetchone()
                             oaids_data[oaid]['primloc_version'] = primlocversion_result[0] if primlocversion_result else None
                             if oaids_data[oaid]['primloc_version'] in ['submittedVersion', 'acceptedVersion']:
-                                categories_count['works'][oc_br_type]['ABC'] += 1
+                                categories_count['works'][oc_br_type]['B'] += 1
                                 break
                         if any(doi.removeprefix(doi_prefix).startswith(s) for s in preprint_string_clues):
-                            categories_count['works'][oc_br_type]['possible_preprints'] += 1
+                            categories_count['works'][oc_br_type]['E'] += 1
                             break
 
                         visited_doi_prefixes.add(doi_prefix)
+
                         # -- get the OpenAlex entity's type
                         cur.execute(query_work_type, (oaid,))
                         worktype_result = cur.fetchone()
@@ -218,11 +234,15 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
                                     visited_doi_prefixes) == 1:  # it means that all the DOIs share the same prefix, therefore have the same publisher
                                 if any(d.get('type') in ['other', 'peer-review', 'editorial', 'erratum', 'letter'] for d
                                        in oaids_data.values()):
-                                    categories_count['works'][oc_br_type]['EFG'] += 1
+                                    categories_count['works'][oc_br_type]['F'] += 1
+                                    break
+                                elif len(prefixed_oaids) == 2:
+                                    # categories_count['works'][oc_br_type]['non classified'] += 1
+                                    # categories_count['works'][oc_br_type]['possible EFG'] += 1  # todo prova così, poi in caso toglilo e rimetti riga sopra
+                                    categories_count['works'][oc_br_type]['C'] += 1  # todo prova così, poi in caso toglilo e rimetti riga sopra
                                     break
                                 else:
-                                    # categories_count['works'][oc_br_type]['non classified'] += 1
-                                    categories_count['works'][oc_br_type]['possible EFG'] += 1  # todo prova così, poi in caso toglilo e rimetti riga sopra
+                                    categories_count['works'][oc_br_type]['non classified'] += 1
                                     break
 
                             else:
@@ -279,6 +299,6 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
 
 if __name__ == '__main__':
 
-    logging.basicConfig(filename='sqlite_categorize_mm.log', level=logging.INFO)
+    # logging.basicConfig(filename='sqlite_categorize_mm.log', level=logging.INFO)
 
-    sqlite_categorize_mm('mm_latest/', out_file_path='tmp_mm_categories.json', db_path='E:/sqlite_mm_openalex.db')
+    sqlite_categorize_mm('mm_latest/', out_file_path='mm_categories.json', db_path='E:/sqlite_mm_openalex.db')
