@@ -34,7 +34,6 @@ iframe_figures/
 /analytics/multi_mapped_omids.csv
 /omid_openalex/omid_openalex/.ipynb_checkpoints/
 /omid_openalex/process/new_mapping_main.py
-analytics/basic_stats.py
 /analytics/temp.py
 /analytics/multi_mapped_venues.csv
 /analytics/multi_mapped_primary_ents.csv
