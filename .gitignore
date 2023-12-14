@@ -59,3 +59,4 @@ analytics/__pycache__/__init__.cpython-39.pyc
 /tmp_mm_categories.json
 /analytics/get_preprint_prefix.py
 /mm_categories.json
+/inverted_multi_mapped.csv
