@@ -11,7 +11,7 @@ w_oaid_only_count = 0
 w_other_pids_count= 0
 for row in op.read_compressed_openalex_dump(works_dir):
     w_count += 1
-    if row['id'].get('doi') or row['id'].get('pmid') or row['id'].get('pmcid'):
+    if row['ids'].get('doi') or row['id'].get('pmid') or row['id'].get('pmcid'):
         w_other_pids_count += 1
     else:
         w_oaid_only_count += 1
@@ -26,7 +26,7 @@ s_oaid_only_count = 0
 s_other_pids_count= 0
 for row in op.read_compressed_openalex_dump(sources_dir):
     s_count += 1
-    if row['id'].get('issn') or row['id'].get('wikidata'):
+    if row['ids'].get('issn') or row['id'].get('wikidata'):
         s_other_pids_count += 1
     else:
         s_oaid_only_count += 1
