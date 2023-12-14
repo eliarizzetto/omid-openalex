@@ -13,3 +13,5 @@ for row in mp.read_compressed_meta_dump('/vltd/data/meta/dump/meta-csv-dump-2023
         omid_only_count += 1
 
 print('Number of rows in zipped Meta CSV dump: ', count)
+print('Number of rows with OMIDs only: ', omid_only_count)
+print('Number of rows with other PIDs: ', other_pids_count)
