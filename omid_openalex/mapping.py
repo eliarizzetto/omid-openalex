@@ -52,7 +52,7 @@ class MetaProcessor:
                 output_row['omid'] = id
             else:  # i.e., if prefix is one of: 'doi:','pmid:','pmcid:','issn:','isbn:','wikidata:'
                 output_row['ids'].append(id)
-        if output_row['ids']:  # if the resource has at least one external ID that is supported by OpenAlex
+        if output_row['ids']:  # if the resource has at least one external ID that is supported by OpenAlex or has ISBN
             output_row['ids'] = ' '.join(output_row['ids'])
             return output_row
 
