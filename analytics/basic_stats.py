@@ -16,7 +16,7 @@ from omid_openalex.utils import read_csv_tables
 non_mappable_count = 0
 for row in read_csv_tables('../openalex_process/meta_ids/primary_ents'):
     supported = False
-    for indx, id in enumerate(row['id'].split()):
+    for indx, id in enumerate(row['ids'].split()):
         pref = id.split(':')[0]
         if pref in {'doi', 'pmid', 'pmcid', 'issn', 'wikidata'}:
             supported = True
