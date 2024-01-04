@@ -1,5 +1,5 @@
 import pandas as pd
-from analytics.helper import create_query_lists_oaid, write_multi_mapped_full_metadata
+from analytics.helper import create_query_lists_oaid, get_openalex_full_metadata
 
 
 config = {
@@ -20,10 +20,9 @@ if __name__ == '__main__':
     print(f'Number of multi-mapped works of which to extract full records: {len(mm_works_list)}')
     print(f'Number of multi-mapped sources of which to extract full records: {len(mm_sources_list)}')
 
-
-    print('Writing full metadata JSON-L files for multi-mapped works')
-    write_multi_mapped_full_metadata(query_list=mm_works_list, inp_dir=config['oa_dump_works'], out_dir=config['works_full_metadata_out_dir'])
-    print('Writing full metadata JSON-L files for multi-mapped sources')
-    write_multi_mapped_full_metadata(query_list=mm_sources_list, inp_dir=config['oa_dump_sources'], out_dir=config['sources_full_metadata_out_dir'])
+    print(f'Writing full metadata JSON-L files for multi-mapped works at {config["works_full_metadata_out_dir"]}.')
+    get_openalex_full_metadata(query_list=mm_works_list, inp_dir=config['oa_dump_works'], out_dir=config['works_full_metadata_out_dir'])
+    print(f'Writing full metadata JSON-L files for multi-mapped sources at {config["sources_full_metadata_out_dir"]}.')
+    get_openalex_full_metadata(query_list=mm_sources_list, inp_dir=config['oa_dump_sources'], out_dir=config['sources_full_metadata_out_dir'])
 
 

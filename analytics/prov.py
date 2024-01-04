@@ -88,7 +88,7 @@ class ProvenanceAnalyser:
         out_row['source'] = set()
         out_row['br'] = ''
         for snapshot in prov_graph['@graph']:
-            primary_source:list|None = snapshot.get('http://www.w3.org/ns/prov#hadPrimarySource')
+            primary_source = snapshot.get('http://www.w3.org/ns/prov#hadPrimarySource')  # list|None
             if primary_source:
                 for i in primary_source:
                     out_row['source'].add(i['@id'])
@@ -104,18 +104,6 @@ class ProvenanceAnalyser:
                     return out_row
         else:
             return None
-
-        # for subgraph in prov_graph['@graph']:
-        #     # ATTENTION: This assumes that there is ONLY ONE valid provenance subgraph per bibliographic entity.
-        #     if not subgraph.get('http://www.w3.org/ns/prov#invalidatedAtTime'):
-        #         br_uri = subgraph.get('http://www.w3.org/ns/prov#specializationOf')[0]['@id']
-        #         if subgraph.get('http://www.w3.org/ns/prov#hadPrimarySource'):
-        #             prov_field = [i['@id'] for i in subgraph['http://www.w3.org/ns/prov#hadPrimarySource']]
-        #         else:
-        #             logging.info(f'No primary source found for this entity. Entity processed: \n{prov_graph}')
-        #             return None # if there is no primary source, there is no valid provenance to look at
-        #
-        #         return {'br': br_uri, 'source': prov_field}
 
     def populate_prov_db(self):
         """
@@ -167,6 +155,7 @@ class ProvenanceAnalyser:
                                     for obj in data:
                                         for br in obj['@graph']:
                                             yield br
+
     def _normalize_type_string(self, type_str: str) -> str:
         normalized = self.URI_TYPE_DICT.get(type_str)
         return normalized if normalized else type_str
@@ -205,6 +194,7 @@ class ProvenanceAnalyser:
                         out_row['omid_only'] = True
 
                     writer.write_row(out_row)
+
     @staticmethod
     def sort_prov_analysis_results(provenance_data: dict):
         """
@@ -257,6 +247,7 @@ class ProvenanceAnalyser:
             json.dump(res, fileout, indent=4)
 
         return dict(res)
+
 
 if __name__ == '__main__':
 

@@ -13,10 +13,10 @@ CATEGORIES = {
     'works': {
         'A': 'Multiple OpenAlex Works share the same DOI, PMID or PMCID',
         'B': 'DOI(s) for preprint/postprint/version hosted in repository',
-        'C': 'Web page DOI + PDF DOI or error (in primary sources or in the collections)',
+        'C': 'Error in data source or 2 entities linked together by mistake (e.g. duplicated DOI)',
         'D': 'Version-marked DOI',
         'E': 'Preprint server DOI',
-        'F': 'Multiple DOIs all from the same publisher/DOI issuer',
+        'F': 'Multiple DOIs all from the same publisher/DOI issuer: errata, letters, editorials, other',
         'non classified': 'Non classified',
     },
     'sources': {
@@ -126,12 +126,12 @@ possible_preprint_prefixes = {
     '10.5772': ['IntechOpen'],
     '10.6028': ['National Institute of Standards and Technology (NIST)'],
     '10.7554': ['eLife Sciences Publications, Ltd'],
-    '10.17615': ['Carolina Digital Repository', 'University of North Carolina at Chapel Hill'], # added manually
-    '10.6084': ['Figshare'], # added manually
-    '10.22541': ['Authorea'], # added manually
-    '10.5281': ['Zenodo'], # added manually
-    '10.17605': ['Center for Open Science', 'OSF'], # added manually
-    '10.48550': ['arXiv'] # added manually
+    '10.17615': ['Carolina Digital Repository', 'University of North Carolina at Chapel Hill'],  # added manually from Datacite
+    '10.6084': ['Figshare'],  # added manually from Datacite
+    '10.22541': ['Authorea'],  # added manually from Datacite
+    '10.5281': ['Zenodo'],  # added manually from Datacite
+    '10.17605': ['Center for Open Science', 'OSF'],  # added manually from Datacite
+    '10.48550': ['arXiv']  # added manually from Datacite
 }
 
 
@@ -160,8 +160,6 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
 
                 work_ids_query = "SELECT wids.openalex, wids.doi, wids.pmid, wids.pmcid FROM works_ids AS wids WHERE wids.work_id = ?;"
                 query_work_type = "SELECT w.type FROM works AS w WHERE w.id = ?;"
-                # TODO: questa query non funziona, perché mancano i dati delle Sources che ospitano i Works multi-mappati ma non sono a loro volta multi-mappate. usa la seconda, anche se è solo per la versione e non per il type della source
-                # query_primloc_type = "SELECT s.type, wpl.version FROM sources AS s JOIN works_primary_locations AS wpl ON s.id = wpl.source_id WHERE wpl.work_id = ?;"
                 query_primloc_version = "SELECT wpl.version FROM works_primary_locations AS wpl WHERE wpl.work_id = ?;"
 
                 for pos, oaid in enumerate(prefixed_oaids):
@@ -187,7 +185,6 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
                     else:
                         visited_pids.update(oaids_data[oaid]['ids'].values())
 
-                    # WORKS CASE A: DOI(s)
                     # with version number --> preprint
                     if doi:
                         doi = doi.lower().removeprefix('https://doi.org/')
@@ -199,18 +196,7 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
                         # WORKS CASE A, B, and C: preprints, postprints, and publisher versions hosted on platforms other than the publisher's
                         if doi_prefix in possible_preprint_prefixes.keys():
 
-                            # # -- get the OpenAlex entity's primary location type and version
-
-                            # TODO: usa la parte commentata solo se sei riuscito a sistemare il DATABASE (mancano Sources che ospitano Works multi-mappati ma non sono a loro volta multi-mappate). Se fai cosi, togli la parte relativa a query_primloc_version
-                            # cur.execute(query_primloc_type, (oaid,))
-                            # primloctype_result = cur.fetchone()
-
-                            # oaids_data[oaid]['primloc_type'] = primloctype_result[0] if primloctype_result else None
-                            # oaids_data[oaid]['primloc_version'] = primloctype_result[1] if primloctype_result else None
-                            # if oaids_data[oaid]['primloc_type'] in ['ebook platform', 'repository', 'other'] or \
-                            #         oaids_data[oaid]['primloc_version'] in ['submittedVersion', 'acceptedVersion']:
-                            #     categories_count['works'][oc_br_type]['ABC'] += 1
-                            #     break
+                            # # -- get the OpenAlex entity's primary location version
 
                             cur.execute(query_primloc_version, (oaid,))
                             primlocversion_result = cur.fetchone()
@@ -237,9 +223,7 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
                                     categories_count['works'][oc_br_type]['F'] += 1
                                     break
                                 elif len(prefixed_oaids) == 2:
-                                    # categories_count['works'][oc_br_type]['non classified'] += 1
-                                    # categories_count['works'][oc_br_type]['possible EFG'] += 1  # todo prova così, poi in caso toglilo e rimetti riga sopra
-                                    categories_count['works'][oc_br_type]['C'] += 1  # todo prova così, poi in caso toglilo e rimetti riga sopra
+                                    categories_count['works'][oc_br_type]['C'] += 1
                                     break
                                 else:
                                     categories_count['works'][oc_br_type]['non classified'] += 1
@@ -282,11 +266,10 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
                             categories_count['sources'][oc_br_type]['non classified'] += 1
                             break
 
-
     # transform nested defaultdicts into regular dicts
-    categories_count['works'] = {k: dict(v) for k,v in categories_count['works'].items()} # dict(categories_count['works'])
+    categories_count['works'] = {k: dict(v) for k,v in categories_count['works'].items()}
 
-    categories_count['sources'] = {k: dict(v) for k,v in categories_count['sources'].items()}  #  dict(categories_count['sources'])
+    categories_count['sources'] = {k: dict(v) for k,v in categories_count['sources'].items()}
 
     logging.info(f'Categories count: {categories_count}')
     pprint(categories_count)
@@ -294,11 +277,11 @@ def sqlite_categorize_mm(mm_csv_dir_path, out_file_path, db_path):
     with open(out_file_path, 'w', encoding='utf-8') as out_file:
         json.dump(categories_count, out_file, indent=4)
 
-
     return categories_count
 
 if __name__ == '__main__':
-
+    pass
     # logging.basicConfig(filename='sqlite_categorize_mm.log', level=logging.INFO)
 
-    sqlite_categorize_mm('mm_latest/', out_file_path='mm_categories.json', db_path='E:/sqlite_mm_openalex.db')
+    # sqlite_categorize_mm('mm_latest/', out_file_path='mm_categories.json', db_path='E:/sqlite_mm_openalex.db')
+    # sqlite_categorize_mm('mm_latest/', out_file_path='scoobiedoo.json', db_path='E:/sqlite_mm_openalex.db')
