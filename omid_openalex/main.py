@@ -23,7 +23,7 @@ if __name__ == '__main__':
     log_file = f'mapping_{datetime.now().strftime("%Y-%m-%d")}.log'
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(message)s', filename=log_file, filemode='w')
     parser = argparse.ArgumentParser(description='Process and map OMID to OpenAlex IDs.')
-    parser.add_argument('--config', '-c', dest='config', type=str, default='config.yaml',
+    parser.add_argument('--config', '-c', dest='config', type=str, default='mapping_config.yaml',
                         help='Path to the YAML configuration file.')
 
 

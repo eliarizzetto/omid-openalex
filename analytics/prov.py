@@ -1,5 +1,5 @@
 import json
-from pprint import pprint
+from datetime import datetime
 from zipfile import ZipFile
 import sqlite3 as sql
 from tqdm import tqdm
@@ -250,11 +250,11 @@ class ProvenanceAnalyser:
 
 
 if __name__ == '__main__':
-
-    logging.basicConfig(level=logging.WARNING, filename='prov.log', filemode='w')
+    log_file = f'mapping_{datetime.now().strftime("%Y-%m-%d")}.log'
+    logging.basicConfig(level=logging.WARNING, filename=log_file, filemode='w')
 
     parser = argparse.ArgumentParser(description='Provenance Analysis Tool')
-    parser.add_argument('-c', '--config', default='config.yaml', help='Path to the YAML configuration file')
+    parser.add_argument('-c', '--config', default='prov_config.yaml', help='Path to the YAML configuration file')
     args = parser.parse_args()
 
     with open(args.config, 'r') as file:
