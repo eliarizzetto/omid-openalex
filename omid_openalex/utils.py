@@ -1,10 +1,11 @@
 import csv
 from os import makedirs, listdir
 from os.path import join, isdir
-from csv import DictWriter, DictReader
+from csv import DictWriter
 from tqdm import tqdm
 import pandas as pd
 import json
+
 
 def read_csv_tables(*dirs, use_pandas=False):
     """
@@ -96,10 +97,9 @@ class MultiFileWriter:
     def _write_csv_row(self, row):
         self.writer.writerow(row)
 
-
     def _write_jsonl_row(self, row):
         json_line = json.dumps(row, ensure_ascii=False)
-        self.current_file.write(json_line  + '\n')
+        self.current_file.write(json_line + '\n')
 
     def write_row(self, row):
         self.write_line(row)
@@ -108,6 +108,7 @@ class MultiFileWriter:
             self.file_name += 1
             self.rows_written = 0
             self._open_new_file()
+
     def close(self):
         if self.current_file:
             self.current_file.close()
