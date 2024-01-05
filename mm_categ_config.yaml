@@ -1,0 +1,26 @@
+# Path to the directory containing the multi-mapped CSV files.
+mm_csv_dir: 'latest_mapping_output/multi_mapped/'
+
+# Path to the directory of OpenAlex dump containing Works.
+oa_dump_works: '/vltd/data/openalex/dump/data/works'
+
+# Path to the directory of OpenAlex dump containing Sources.
+oa_dump_sources: '/vltd/data/openalex/dump/data/sources'
+
+# Path to the directory where to store the full metadata of Works that need to be processed (JSON-L files).
+works_full_metadata_dir: '../openalex_analytics/multi_mapped_full_metadata/works'
+
+# Path to the directory where to store the full metadata of Sources that need to be processed (JSON-L files).
+sources_full_metadata_dir: '../openalex_analytics/multi_mapped_full_metadata/sources'
+
+# Path to the directory where to store the CSV files derived from flattening the JSON-L files.
+flat_csv_dir: '../openalex_analytics/multi_mapped_full_metadata/flat_csv'
+
+# Path to the SQLite database file containing the full tables of Works and Sources.
+db_path: '../openalex_analytics/multi_mapped_full_metadata/openalex_mm.db'
+
+# Path to the SQL schema file for creating the full tables of Works and Sources.
+sql_schema_path: '../openalex_analytics/multi_mapped_full_metadata/create_schema.sql'
+
+# Path to the JSON file where to write the output of the categorisation of multi-mapped Works and Sources.
+out_file_path: 'mm_categories.json'

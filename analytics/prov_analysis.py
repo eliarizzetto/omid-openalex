@@ -250,7 +250,7 @@ class ProvenanceAnalyser:
 
 
 if __name__ == '__main__':
-    log_file = f'mapping_{datetime.now().strftime("%Y-%m-%d")}.log'
+    log_file = f'prov_analysis_{datetime.now().strftime("%Y-%m-%d")}.log'
     logging.basicConfig(level=logging.WARNING, filename=log_file, filemode='w')
 
     parser = argparse.ArgumentParser(description='Provenance Analysis Tool')

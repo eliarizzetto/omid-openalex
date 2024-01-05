@@ -169,15 +169,15 @@ def get_openalex_full_metadata(query_list: List[str], inp_dir: str, out_dir: str
                 writer.write_row(record)
 
 
-def create_query_lists_oaid(multi_mapped_df: pd.DataFrame) -> tuple:
+def create_mm_oaids_lists(mm_csv_dir:str) -> tuple:
     """
-    Create two lists of OAIDs, one for Works, the other for Sources. The OAIDs are extracted from the 'openalex_id' column of the input DataFrame.
-        :param multi_mapped_df: a DataFrame where the 'openalex_id' column contains a string-encoded list of un-prefixed OAIDs (separator: space).
+    Creates two duplicate-free lists of multi-mapped OAIDs, one for Works and one for Sources, from the multi-mapped CSV file.
+        :param mm_csv_dir: the directory storing the multi-mapped CSV file(s).
         :return: a tuple of two lists, the first containing the OAIDs of the Works and the second containing the OAIDs of the Sources.
     """
 
-    works_list = list({s for l in multi_mapped_df.openalex_id for s in l.split() if s.startswith('W')})
-    sources_list = list({s for l in multi_mapped_df.openalex_id for s in l.split() if s.startswith('S')})
+    works_list = list({s for r in read_csv_tables(mm_csv_dir) for s in r['openalex_id'].split() if s.startswith('W')})
+    sources_list = list({s for r in read_csv_tables(mm_csv_dir) for s in r['openalex_id'].split() if s.startswith('S')})
     return works_list, sources_list
 
 
