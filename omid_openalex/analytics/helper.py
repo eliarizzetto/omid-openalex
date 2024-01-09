@@ -9,14 +9,14 @@ from omid_openalex.utils import MultiFileWriter, read_csv_tables
 from omid_openalex.mapping import OpenAlexProcessor
 
 
-def analyse_multi_mapped_omids(file_path:str, res_type='journal article'):
+def analyse_mm_by_type(file_path:str, res_type='journal article'):
     """
     Counts the number of multi-mapped OMIDs of a specific type of bibliographic resource (e.g. journal article, book,
     etc.), groups them by the type(s) of OpenAlex entity they are mapped to (e.g. Work, Source, or both),
     and prints the frequency distribution of the OMIDs over the number of corresponding OpenAlex IDs mapping to a single OMID.
     :param file_path: the .csv file storing the table rows containing multi-mapped OMIDs
     :param res_type: the type of bibliographic resource to consider (default: 'journal article').
-    :return: tuple of three lists by composition of OAIDs (works, sources, or both)
+    :return: None
     """
     df = pd.read_csv(file_path, sep=',', names=['omid', 'openalex_id', 'type'])
 
@@ -46,9 +46,8 @@ def analyse_multi_mapped_omids(file_path:str, res_type='journal article'):
 
     print(f'Number of OMIDs of {res_type} multi-mapped to Work IDs only: {len(all_works)}. The following illustrates how these are distributed over the number of OAIDs each OMID is mapped to: {dict(sorted(count_works.items()))}', end='\n\n')
     print(f'Number of OMIDs of {res_type} multi-mapped to Source IDs only: {len(all_sources)}. The following illustrates how these are distributed over the number of OAIDs each OMID is mapped to: {dict(sorted(count_sources.items()))}', end='\n\n')
-    print(f'Number of OMIDs of {res_type} multi-mapped to both Work and Source IDs: {len(works_and_sources)}. The following illustrates how these are distributed over the number of OAIDs each OMID is mapped to: {dict(sorted(count_works_and_sources.items()))}', end='\n\n')
-
-    return all_works, all_sources, works_and_sources
+    if works_and_sources:
+        print(f'Number of OMIDs of {res_type} multi-mapped to both Work and Source IDs: {len(works_and_sources)}. The following illustrates how these are distributed over the number of OAIDs each OMID is mapped to: {dict(sorted(count_works_and_sources.items()))}', end='\n\n')
 
 
 def add_columns_to_df(df):
@@ -84,7 +83,7 @@ def prepare_data_for_filtering(filepath:str)->pd.DataFrame:
     return data
 
 
-def filter_multi_mapped_df(df, res_type: Union[str, None], composition: Union[Literal['works', 'sources', 'both'], None], oaid_count: Union[int, None]=2):
+def filter_mm_df(df, res_type: Union[str, None], composition: Union[Literal['works', 'sources', 'both'], None], oaid_count: Union[int, None]=2):
     """
     Filter the dataframe by the type of resource, the composition of the OAIDs, and the number of OAIDs for a single OMID.
     :param df: a DF to which columns 'oaid_count' and 'composition' have been added

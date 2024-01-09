@@ -60,3 +60,4 @@ omid_openalex/analytics/__pycache__/__init__.cpython-39.pyc
 /omid_openalex/analytics/get_preprint_prefix.py
 /mm_categories.json
 /inverted_multi_mapped.csv
+tmp/
