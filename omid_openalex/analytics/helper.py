@@ -6,7 +6,9 @@ import warnings
 from typing import Union
 from collections import Counter
 from omid_openalex.utils import MultiFileWriter, read_csv_tables
-from omid_openalex.mapping import OpenAlexProcessor
+from omid_openalex.mapping import OpenAlexProcessor, MetaProcessor
+import sqlite3 as sql
+from tqdm import tqdm
 
 
 def analyse_mm_by_type(file_path:str, res_type='journal article'):
@@ -208,3 +210,39 @@ def find_inverted_multi_mapped(inp_dir, out_dir):
     result_df = pd.DataFrame(result_rows)
     print("Number of inverted multi-mapped entities: ", len(result_df))
     result_df.to_csv(os.path.join(out_dir, "inverted_multi_mapped.csv"), index=False)
+
+
+def intersect_venues_primary_entities(meta_archive_path:str, omid_db_path:str):
+    """
+    Test the intersection of venues and primary entities in OC Meta CSV dump. We want to verify
+    that all the BRs specified in the 'venue' field of the CSV dump are also represented as primary entities,
+    i.e. have a row of their own in the table.
+    :param meta_archive_path: path to the compressed CSV dump
+    :param omid_db_path: path to the sqlite database storing the OMIDs of the primary entities in the CSV files
+    :return:
+    """
+
+    mp = MetaProcessor()
+
+    with sql.connect(omid_db_path) as conn:
+        venues_in_venue_field = 0
+        venues_as_rows = 0
+        cur = conn.cursor()
+        query = 'SELECT omid FROM Omid WHERE omid = ?'
+        visited_venues = set()
+        for row in tqdm(mp.read_compressed_meta_dump(meta_archive_path)):
+            v = row['venue']
+            if not v:
+                continue
+            venue_ids = v[v.index('[') + 1:v.index(']')].strip().split()
+            for id in venue_ids:
+                if id.startswith('omid:') and id not in visited_venues:
+                    venues_in_venue_field += 1
+                    visited_venues.add(id)
+                    cur.execute(query, (id,))
+                    query_res = cur.fetchone()
+                    if query_res:
+                        venues_as_rows += 1
+        print('Venues in venue field: ', venues_in_venue_field)
+        print('Venues as rows: ', venues_as_rows)
+        print('Difference: ', venues_in_venue_field - venues_as_rows)
