@@ -39,7 +39,7 @@ if __name__ == '__main__':
     mapping = Mapping()
 
     # Extract OMIDs, PIDs and types from meta tables ad make new tables
-    meta_processor.preprocess_meta_tables(**settings['meta_tables'])
+    # meta_processor.preprocess_meta_tables(**settings['meta_tables'])
 
     # Create CSV table for OpenAlex Work IDs
     openalex_processor.create_openalex_ids_table(**settings['openalex_works'])
@@ -54,4 +54,4 @@ if __name__ == '__main__':
     openalex_processor.create_id_db_table(**settings['db_sources_wikidata'])
 
     # Map OMID to OpenAlex IDs
-    mapping.map_omid_openalex_ids(**settings['mapping'])
+    # mapping.map_omid_openalex_ids(**settings['mapping'])
