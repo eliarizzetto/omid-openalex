@@ -30,6 +30,7 @@ metadata the same DOI as a BR in OpenAlex, these entities get aligned ([Fig 1](#
     </figcaption>
 </figure>
 
+
 The output of this mapping process is divided into three separate groups of BRs:
 1. BRs mapped in a 1:1 ratio, i.e. OC Meta BRs that have been mapped to exactly one BR in OpenAlex each and 
 their corresponding BRs in OpenAlex.
@@ -106,6 +107,7 @@ to enable faster queries on this data. Each external PID is a primary key, to wh
     Diagram representing the SQLite database storing OpenAlex IDs and the external PIDs associated to them.
     </figcaption>
 </figure>
+
 
 Finally, the actual mapping step takes place: for each row in the table storing OC Meta IDs (i.e. for each OC Meta
 BR with external PIDs), each external PID is looked for in the database: if it is present, the OMID 
