@@ -102,7 +102,7 @@ to enable faster queries on this data. Each external PID is a primary key, to wh
 <figure>
   <img src="./imgs/oa_ids_tables_db.png?raw=true" alt="Entity relationship diagram for the database storing OpenAlex IDs and the external PIDs associated to them"/>
     <figcaption style="font-style: italic; font-size: 85%">
-    <i><a id="fig1"><b>Figure 2.</b></a>Diagram representing the SQLite database storing OpenAlex IDs and the external PIDs associated to them.</i>
+    <i><a id="fig2"><b>Figure 2.</b></a>Diagram representing the SQLite database storing OpenAlex IDs and the external PIDs associated to them.</i>
     </figcaption>
 </figure>
 
