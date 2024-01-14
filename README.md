@@ -1,6 +1,6 @@
-# OpenAlex ID to OMID mapping
+# OMID to OpenAlex ID mapping
 
-This repository contains the code to generate the mapping between OpenAlex IDs and OMIDs. The mapping is based on the public persistent identifiers that are associated with a given entity in both the data collections: e.g., if a journal article's DOI is registered in both OpenAlex and OpenCitations Meta, then the corresponding OpenAlex ID and OMID get aligned.
+This repository contains the code to generate the mapping between OMIDs and OpenAlex IDs. The mapping is based on the public persistent identifiers that are associated with a given entity in both the data collections: e.g., if a journal article's DOI is registered in both OpenAlex and OpenCitations Meta, then the corresponding OpenAlex ID and OMID get aligned.
 This alignment permits to add the corresponding OpenAlex ID for every resource already registered in OpenCitations Meta.
 
 
@@ -16,6 +16,16 @@ one BR in OpenAlex (multi-mapped BRs).
 The primary goal of the mapping is the addition of OpenAlex IDs to the metadata of the BRs in OC Meta; analysing the 
 mapping's output, moreover, provides the chance to detect potential inconsistencies in the input collections (i.e. OC 
 Meta and OpenAlex) and better understand the causes of these issues.
+
+### Launch the process
+The process can be launched from CLI with the following command, executed from inside the `omid-openalex` directory:
+```
+python -m omid_openalex.main -c <PATH>
+```
+Where:
+* `-c` `--config`: path to the configuration file.
+
+A guide on how to write the configuration file is provided [here](#configuration).
 
 ## The mapping process
 The mapping between the BRs in the two collections is performed by linking them according to the presence, in both 
