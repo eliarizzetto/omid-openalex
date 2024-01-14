@@ -105,7 +105,7 @@ to enable faster queries on this data. Each external PID is a primary key, to wh
     <i><a id="fig2"><b>Figure 2.</b></a>Diagram representing the SQLite database storing OpenAlex IDs and the external PIDs associated to them.</i>
     </figcaption>
 </figure>
-<br/>
+<br />
 
 Finally, the actual mapping step takes place: for each row in the table storing OC Meta IDs (i.e. for each OC Meta
 BR with external PIDs), each external PID is looked for in the database: if it is present, the OMID 
