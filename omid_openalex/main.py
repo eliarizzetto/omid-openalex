@@ -42,9 +42,9 @@ if __name__ == '__main__':
     # meta_processor.preprocess_meta_tables(**settings['meta_tables'])
 
     # Create CSV table for OpenAlex Work IDs
-    openalex_processor.create_openalex_ids_table(**settings['openalex_works'])
+    # openalex_processor.create_openalex_ids_table(**settings['openalex_works'])
     # Create CSV table for OpenAlex Source IDs
-    openalex_processor.create_openalex_ids_table(**settings['openalex_sources'])
+    # openalex_processor.create_openalex_ids_table(**settings['openalex_sources'])
 
     # Create database tables for PIDs in OpenAlex
     openalex_processor.create_id_db_table(**settings['db_works_doi'])
