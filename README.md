@@ -161,7 +161,7 @@ The `main` module is the executable to run the whole process (except the result 
 ## Configuration
 Function calls in the `main` module take their parameters from a YAML configuration file, 
 whose path is specified in the `--config` argument of the launching command.
-The YAML file is read as a nested dictionary, and arguments in it are grouped under different keys, according to the purpose they serve. An example of the configuration file can be found in the [config.yaml](omid_openalex/config.yaml) file. The 
+The YAML file is read as a nested dictionary, and arguments in it are grouped under different keys, according to the purpose they serve. An example of the configuration file can be found in the [config.yaml](config.yaml) file. The 
 following illustrates how to compile the configuration file.
 
 #### `meta_tables`
