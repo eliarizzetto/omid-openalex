@@ -17,7 +17,9 @@ The primary goal of the mapping is the addition of OpenAlex IDs to the metadata 
 mapping's output, moreover, provides the chance to detect potential inconsistencies in the input collections (i.e. OC 
 Meta and OpenAlex) and better understand the causes of these issues.
 
-### Launch the process
+The present guide concerns the mapping process. For the mapping results analysis see the [README.md documentation file](./omid_openalex/analytics/README.md) inside omid_openalex/analytics.
+
+### Launch the mapping process
 The process can be launched from CLI with the following command, executed from inside the `omid-openalex` directory:
 ```
 python -m omid_openalex.main -c <PATH>
@@ -136,13 +138,25 @@ optionally, the BR type, in the `omid` and `type` fields respectively.
 ## Software structure
 The `utils` module contains the `read_csv_tables` function and the `MultiFileWriter` class, which are used across the 
 whole software to read and write tables.
-The source code for the mapping process can be found inside the `mapping` module. There are three classes:
+The source code for the mapping process can be found inside the `mapping` module. There are three classes ([Fig 3](#fig3)):
 1. The `MetaProcessor` class deals with creating the tables storing OC Meta BRs that have external IDs (`process_meta_tables` method).
 2. The `OpenAlexProcessor` class deals with creating the tables storing OpenAlex BRs that have external IDs supported also by OC Meta (`create_openalex_ids_tables` method)
 and with converting these tables into SQLite database tables (`create_id_db_table` method).
 3. The `Mapping` class has only one method, `map_omid_openalex_ids`, which is the implementation of the mapping step.
 
-The `main` module is the executable to run the whole process.
+As of now, some software features concern the pre-processing of responsible agents (authors, publishers, editors) and the separate pre-processing of venues (container publications such as journals, conferences, etc.). For example:
+* the `MetaProcessor.process_meta_tables` function saves separate tables for all bibliographic resources (in a directory named `primary_ents`), for venues only (in a directory named `venues`) and for responsible agents (in a directory named `resp_ags`)
+* the `OpenAlexProcessor` class includes methods for extracting PIDs of other OpenAlex entity types besides Works and Sources (namely Institutions, Publishers, Funders  and Authors)
+These features are to be considered experimental and are not used for the mapping process.
+
+The `main` module is the executable to run the whole process (except the result analysis process, which is run separately). The following section illustrates how to write the configuration file storing the arguments passed to the functions called inside `main.py`.
+
+<figure>
+  <img src="./imgs/mapping_class_diagram.png?raw=true" alt="UML Class diagram"/>
+    <figcaption style="font-style: italic; font-size: 85%">
+    <i><a id="fig3"><b>Figure 3.</b> </a>UML Class diagram of the software for the mapping process.</i>
+    </figcaption>
+</figure>
 
 ## Configuration
 Function calls in the `main` module take their parameters from a YAML configuration file, 
@@ -153,7 +167,7 @@ following illustrates how to compile the configuration file.
 #### `meta_tables`
 Groups the parameters to pass to `MetaProcessor.process_meta_tables()` for creating CSV tables of OC Meta BRs with external PIDs.
 - `meta_dump_zip` (str): path to the ZIP file of the OC Meta dump
-- `meta_ids_out` (str): path to the directory where to store the CSV tables. The tables will be stored in a subdirectory named `primary_ents`
+- `meta_ids_out` (str): path to the directory where to save the CSV tables. **Here, the tables will be stored in a subdirectory named `primary_ents`**
 - `all_rows` (bool): if True, processes all the BRs in the OC Meta CSV dump, regardless of whether a BR already has an OpenAlex ID. If False, only BRs for which the OpenAlex ID is missing are processed.
 
 #### `openalex_works`
@@ -177,7 +191,7 @@ Groups the parameters to pass to `OpenAlexProcessor.create_id_db_table()` for cr
 #### `db_works_pmid`, `db_works_pmcid`, `db_sources_issn`, `db_sources_wikidata`
 These group the parameters to pass to `OpenAlexProcessor.create_id_db_table()` for creating database tables for PMIDs and PMCIDs of Works, and
 for ISSNs and Wikidata IDs of Sources. This follows the same logic as the parameters in `db_works_doi`, but the argument values must be adapted (except `db_path`).
-When processing Works, `entity_type` must be set to "work and `id_type` must be set to "pmid" and "pmcid"; when processing Sources, `entity_type` must be set to "source and `id_type` must be set to "issn" and "wikidata".
+When processing Works, `entity_type` must be set to "work and `id_type` must be set to "pmid" and "pmcid"; when processing Sources, `entity_type` must be set to "source" and `id_type` must be set to "issn" and "wikidata".
 
 #### `mapping`
 Groups the parameters to pass to `Mapping.map_omid_openalex_ids()` for creating the mapping.

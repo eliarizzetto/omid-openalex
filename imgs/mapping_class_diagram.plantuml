@@ -1,0 +1,97 @@
+@startuml
+
+'!theme plain
+'top to bottom direction
+'skinparam linetype ortho
+skinparam defaultFontName Courier
+skinparam groupInheritance 3
+skinparam dpi 300
+
+
+<style>
+classDiagram {
+'    BackgroundColor aliceblue
+'    class {
+'        BackgroundColor LightBlue
+'        FontSize 30
+''        FontStyle bold
+'    }
+    package {
+        FontSize 28
+        BackgroundColor Khaki
+'    }
+'    Rectangle {
+'        BackgroundColor SeaShell
+'        FontSize 20
+'        FontStyle normal
+'    }
+}
+.newClassStyle {
+    BackgroundColor skyBlue
+}
+</style>
+
+'package mapping as "omid_openalex.mapping.py" {
+    class Mapping as "omid_openalex.mapping.Mapping" {
+       __init__(self)
+       map_omid_openalex_ids(inp_dir, db_path, out_dir, multi_mapped_dir, non_mapped_dir, type_field=True, all_rows=True)
+    }
+'}
+
+'package mapping as "omid_openalex.mapping.py" {
+    class MetaProcessor as "omid_openalex.mapping.MetaProcessor"{
+       __init__(self)
+       get_entity_ids(row)
+       get_venue_ids(row)
+    '   get_ra_ids(row, field: Literal['author', 'publisher', 'editor'])
+       get_ra_ids(row, field)
+       read_compressed_meta_dump(csv_dump_path)
+       preprocess_meta_tables(self, meta_dump_zip, meta_ids_out, all_rows=True)
+    }
+'}
+
+'package mapping as "omid_openalex.mapping.py" {
+    class OpenAlexProcessor as "omid_openalex.mapping.OpenAlexProcessor" {
+       __init__(self)
+       get_work_ids(inp_entity)
+       get_source_ids(inp_entity)
+       get_author_ids(inp_entity)
+       get_institution_ids(inp_entity)
+       get_publisher_ids(inp_entity)
+       get_funder_ids(inp_entity)
+       read_compressed_openalex_dump(in_dir)
+    '   create_openalex_ids_table(self, inp_dir, out_dir, entity_type: Literal['work', 'source', 'author', 'publisher', 'institution', 'funder'])
+       create_openalex_ids_table(self, inp_dir, out_dir, entity_type)
+    '   create_id_db_table(inp_dir, db_path, id_type: Literal['doi', 'pmid', 'pmcid', 'wikidata', 'issn'],entity_type: Literal['work', 'source'])
+       create_id_db_table(inp_dir, db_path, id_type, entity_type)
+    }
+'}
+
+'package utils as "omid_openalex.utils.py" {
+    class MultiFileWriter as "omid_openalex.utils.MultiFileWriter" {
+       rows_written:
+       current_file:
+       out_dir:
+       file_name:
+       write_line:
+       max_rows_per_file:
+       kwargs:
+       writer:
+       __init__(self, out_dir, nrows=10000, **kwargs)
+       __enter__(self)
+       __exit__(self, exc_type, exc_value, traceback)
+       _open_new_file(self)
+       _write_csv_row(self, row)
+       _write_jsonl_row(self, row)
+       write_row(self, row)
+       close(self)
+    }
+'}
+
+Mapping -up[hidden]- MultiFileWriter
+MetaProcessor -up[hidden]- Mapping
+OpenAlexProcessor -up[hidden]- MetaProcessor
+
+
+
+@enduml
