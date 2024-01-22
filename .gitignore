@@ -61,3 +61,5 @@ omid_openalex/analytics/__pycache__/__init__.cpython-39.pyc
 /mm_categories.json
 /inverted_multi_mapped.csv
 tmp/
+prov_analysis_config_server.yaml
+config_server.yaml
