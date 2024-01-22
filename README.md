@@ -159,7 +159,7 @@ The `main` module is the executable to run the whole process (except the result 
 </figure>
 
 ## Configuration
-Function calls in the `main` module take their parameters from a YAML configuration file, 
+Function calls in the `main` module (which stores the code to execute the mapping process) take their parameters from a YAML configuration file, 
 whose path is specified in the `--config` argument of the launching command.
 The YAML file is read as a nested dictionary, and arguments in it are grouped under different keys, according to the purpose they serve. An example of the configuration file can be found in the [config.yaml](config.yaml) file. The 
 following illustrates how to compile the configuration file.
@@ -202,4 +202,3 @@ Groups the parameters to pass to `Mapping.map_omid_openalex_ids()` for creating 
 - `non_mapped_dir` (str): The directory where to save the table storing unmapped BRs
 - `type_field` (bool): If True, always write the `type` field in the tables.
 - `all_rows` (bool): If True, processes all the BRs in the input table, regardless of whether a BR already has an OpenAlex ID. If False, only BRs for which the OpenAlex ID is missing are processed.
-
