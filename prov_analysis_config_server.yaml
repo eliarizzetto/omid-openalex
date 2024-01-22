@@ -1,7 +1,0 @@
-br_rdf_path: '../meta_rdf_2023_10/br.zip'
-prov_db_path: '../openalex_analytics/prov.db'
-meta_tables_csv: '../openalex_process/meta_ids/primary_ents'
-omid_db_path: '../openalex_analytics/omids.db'
-extra_br_out_dir: '../openalex_analytics/extra_br_ids'
-non_mapped_dir: '../openalex_process/mapping_output/non_mapped'
-results_out_path: '../openalex_analytics/provenance_analysis_results.json'
