@@ -1,66 +1,18 @@
-# Pycharm and VSC settings, virtual env
+# Pycharm and VSC settings, virtual env, Jupyter Notebook checkpoints
 .idea/
 .idea
 .vscode/
 .venv
 __pycache__/
 *.pyc
-
-# Tryouts and experiments
-archive/prove/
-*/prove/
-trials
+**/.ipynb_checkpoints
 
 # Logs
-/omid_openalex/preprocess/*.log
-*.log
-
-# Docs
-docs/
-
-# private configuration files
-# PostgreSQL
-/omid_openalex/analytics/postgres_config.yaml
+**/*.log
 
 # other
-*.db
-/omid_openalex/omid_openalex/prove.py
-/archive/prove/experiment.py
-archive/graphs/
-iframe_figures/
-**/*.ipynb_checkpoints/
-/omid_openalex/logs/
-*/.ipynb_checkpoints/
-/omid_openalex/analytics/multi_mapped_omids.csv
-/omid_openalex/omid_openalex/.ipynb_checkpoints/
-/omid_openalex/process/new_mapping_main.py
-/omid_openalex/analytics/temp.py
-/omid_openalex/analytics/multi_mapped_venues.csv
-/omid_openalex/analytics/multi_mapped_primary_ents.csv
-.idea/misc.xml
-/data/
-/.idea/
-/omid_openalex/analytics/prova_provenance.py
-/omid_openalex/analytics/provenance.db
-omid_openalex/analytics/__pycache__/__init__.cpython-39.pyc
-/omid_openalex/analytics/provenance_20231030.py
-/omid_openalex/analytics/intersection_venues_primary_ents.py
-/omid_openalex/analytics/provenance_analysis.json
-/omid_openalex/analytics/sorted_provenance_analysis.json
-/omid_openalex/analytics/prove.py
-/omid_openalex/analytics/provenance_analysis_results_11nov.json
-/omid_openalex/analytics/provenance_analysis_results_11nov_id_info.json
-/omid_openalex/analytics/multi_map_categories.py
-/mm_latest/
-/archive/ASAPbio Preprint Directory 2023-08-09.csv
-/mm_categories.json
-/archive/doi_prefix_register.json
-/preprint_prefix.json
-/tmp_mm_categories.json
-/omid_openalex/analytics/get_preprint_prefix.py
-/mm_categories.json
-/inverted_multi_mapped.csv
+**/analytics/get_preprint_prefix.py
+data/
 tmp/
-prov_analysis_config_server.yaml
-config_server.yaml
 archive
+**/*.db
