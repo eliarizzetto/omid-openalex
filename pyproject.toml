@@ -3,10 +3,11 @@ name = "omid-openalex"
 version = "0.1.0"
 description = "A software for mapping OpenCitations IDs (OMIDs) of bibliographic resources in OpenCitations Meta to the corresponding OpenAlex IDs."
 authors = ["Elia Rizzetto <elia.rizzetto@studio.unibo.it>", "OpenCitations <tech@opencitations.net>"]
-readme = "README.md"
+readme = ["README.md", "oc_alignoa/analytics/README.md"]
 packages = [{include = "oc_alignoa"}]
 license = "ISC"
 keywords = ["mapping", "oc meta", "openalex"]
+repository = "https://github.com/eliarizzetto/omid-openalex"
 
 [tool.poetry.dependencies]
 python = "^3.9"
