@@ -26,7 +26,7 @@ import sqlite3 as sql
 from csv import DictReader, DictWriter
 from tqdm import tqdm
 import time
-from omid_openalex.utils import read_csv_tables, MultiFileWriter
+from oc_alignoa.utils import read_csv_tables, MultiFileWriter
 
 
 class MetaProcessor:

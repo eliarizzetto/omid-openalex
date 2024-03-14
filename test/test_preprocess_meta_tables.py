@@ -17,7 +17,7 @@ import unittest
 import os
 from os.path import join
 import shutil
-from omid_openalex.mapping import MetaProcessor
+from oc_alignoa.mapping import MetaProcessor
 import csv
 
 

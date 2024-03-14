@@ -4,7 +4,7 @@ from zipfile import ZipFile
 import sqlite3 as sql
 from tqdm import tqdm
 import logging
-from omid_openalex.utils import read_csv_tables, MultiFileWriter
+from oc_alignoa.utils import read_csv_tables, MultiFileWriter
 from collections import defaultdict
 from os import makedirs
 from os.path import dirname

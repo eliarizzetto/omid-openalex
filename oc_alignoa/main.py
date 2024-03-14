@@ -13,7 +13,7 @@
 # ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 # SOFTWARE.
 
-from omid_openalex.mapping import *
+from oc_alignoa.mapping import *
 import yaml
 import argparse
 import logging

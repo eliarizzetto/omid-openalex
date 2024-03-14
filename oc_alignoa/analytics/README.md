@@ -1,11 +1,11 @@
 # Mapping results analysis
-The `omid_openalex.analytics` subpackage includes the Python code to analyse the output of the mapping process with special regard to [multi-mapped bibliographic resources and unmapped bibliographic resources](../../README.md#the-mapping-process). Unmapped resources are analysed with respect to their provenance, in order to understand to what extent each of the sources used by OC Meta (e.g. Crossref, Datacite, Zenodo) contributed to provide data that is not currently mapped to OpenAlex.
+The `oc_alignoa.analytics` subpackage includes the Python code to analyse the output of the mapping process with special regard to [multi-mapped bibliographic resources and unmapped bibliographic resources](../../README.md#the-mapping-process). Unmapped resources are analysed with respect to their provenance, in order to understand to what extent each of the sources used by OC Meta (e.g. Crossref, Datacite, Zenodo) contributed to provide data that is not currently mapped to OpenAlex.
 Multi-mapped bibliographic resources are analysed with respect to their cause and features: the cases where a single OMID has been found to align to multiple OpenAlex IDs are categorised via specifically designed heuristics that aim at catching the most likely cause for such multi-mapping.
 
 ## Analysis of unmapped resources' provenance
 The process to analyse the provenance of unmapped resources can be launched from CLI with the following command, executed from inside the `omid-openalex` directory:
 ```
-python -m omid_openalex.analytics.prov_analysis -c <PATH>
+python -m oc_alignoa.analytics.prov_analysis -c <PATH>
 ```
 Where:
 * `-c` `--config`: path to the YAML configuration file.
@@ -31,7 +31,7 @@ The parameters specified in the configuration file are the following:
 ## Multi mapped BRs categorisation
 The process to categorise multi-mapped BRs can be launched from CLI with the following command, executed from inside the `omid-openalex` directory:
 ```
-python -m omid_openalex.analytics.mm_categ -c <PATH>
+python -m oc_alignoa.analytics.mm_categ -c <PATH>
 ```
 Where:
 * `-c` `--config`: path to the YAML configuration file.

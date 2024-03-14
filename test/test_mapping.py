@@ -16,7 +16,7 @@
 import unittest
 import os
 from os.path import join, exists
-from omid_openalex.mapping import Mapping
+from oc_alignoa.mapping import Mapping
 import shutil
 import csv
 

@@ -31,14 +31,14 @@ classDiagram {
 }
 </style>
 
-'package mapping as "omid_openalex.mapping.py" {
+'package mapping as "oc_alignoa.mapping.py" {
     class Mapping as "omid_openalex.mapping.Mapping" {
        __init__(self)
        map_omid_openalex_ids(inp_dir, db_path, out_dir, multi_mapped_dir, non_mapped_dir, type_field=True, all_rows=True)
     }
 '}
 
-'package mapping as "omid_openalex.mapping.py" {
+'package mapping as "oc_alignoa.mapping.py" {
     class MetaProcessor as "omid_openalex.mapping.MetaProcessor"{
        __init__(self)
        get_entity_ids(row)
@@ -50,7 +50,7 @@ classDiagram {
     }
 '}
 
-'package mapping as "omid_openalex.mapping.py" {
+'package mapping as "oc_alignoa.mapping.py" {
     class OpenAlexProcessor as "omid_openalex.mapping.OpenAlexProcessor" {
        __init__(self)
        get_work_ids(inp_entity)
@@ -67,7 +67,7 @@ classDiagram {
     }
 '}
 
-'package utils as "omid_openalex.utils.py" {
+'package utils as "oc_alignoa.utils.py" {
     class MultiFileWriter as "omid_openalex.utils.MultiFileWriter" {
        rows_written:
        current_file:

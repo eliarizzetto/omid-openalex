@@ -10,12 +10,12 @@ The primary goal of the mapping is the addition of OpenAlex IDs to the metadata 
 mapping's output, moreover, provides the chance to detect potential inconsistencies in the input collections (i.e. OC 
 Meta and OpenAlex) and better understand the causes of these issues.
 
-The present guide concerns the mapping process. For the mapping results analysis see the [README.md documentation file](./omid_openalex/analytics/README.md) inside omid_openalex/analytics.
+The present guide concerns the mapping process. For the mapping results analysis see the [README.md documentation file](./oc_alignoa/analytics/README.md) inside "oc_alignoa/analytics".
 
 ### Launch the mapping process
 The process can be launched from CLI with the following command, executed from inside the `omid-openalex` directory:
 ```
-python -m omid_openalex.main -c <PATH>
+python -m oc_alignoa.main -c <PATH>
 ```
 Where:
 * `-c` `--config`: path to the configuration file.

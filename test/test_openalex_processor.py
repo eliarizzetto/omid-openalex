@@ -18,7 +18,7 @@ import os
 import shutil
 import csv
 from os.path import join
-from omid_openalex.mapping import OpenAlexProcessor
+from oc_alignoa.mapping import OpenAlexProcessor
 
 
 class TestOpenAlexProcessor(unittest.TestCase):

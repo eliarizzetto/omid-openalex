@@ -1,7 +1,7 @@
 from collections import defaultdict
-from omid_openalex.utils import read_csv_tables, MultiFileWriter
+from oc_alignoa.utils import read_csv_tables, MultiFileWriter
 from helper import create_mm_oaids_lists, get_openalex_full_metadata
-from omid_openalex.mapping import OpenAlexProcessor
+from oc_alignoa.mapping import OpenAlexProcessor
 from pprint import pprint
 import re
 import sqlite3 as sql

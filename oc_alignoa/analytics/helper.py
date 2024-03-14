@@ -5,8 +5,8 @@ from typing import Literal, List
 import warnings
 from typing import Union
 from collections import Counter
-from omid_openalex.utils import MultiFileWriter, read_csv_tables
-from omid_openalex.mapping import OpenAlexProcessor, MetaProcessor
+from oc_alignoa.utils import MultiFileWriter, read_csv_tables
+from oc_alignoa.mapping import OpenAlexProcessor, MetaProcessor
 import sqlite3 as sql
 from tqdm import tqdm
 
